@@ -20,6 +20,9 @@
   --shadow: 0 1px 2px rgb(0 0 0 / 6%), 0 8px 24px rgb(0 0 0 / 8%);
   --backdrop: rgb(20 18 16 / 22%);
   --radius: 6px;
+  /* A kártyák (rács, panel kép) lágyabb sarka. */
+  --radius-card: 12px;
+  --radius-card-inner: 8px;
   --space: 4px;
   font-family:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -578,7 +581,7 @@ h3 {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
   background: var(--surface);
   overflow: hidden;
   /* Sok kártyánál a képernyőn kívüli elemek kirajzolása elmarad. */
@@ -730,7 +733,7 @@ h3 {
   display: block;
   width: 100%;
   aspect-ratio: 63 / 88;
-  border-radius: 4px;
+  border-radius: var(--radius-card-inner);
   object-fit: cover;
   transition:
     filter 150ms,
@@ -758,7 +761,7 @@ h3 {
 .ph-art {
   flex: 0 0 46%;
   border: 1px solid var(--line-strong);
-  border-radius: 3px;
+  border-radius: 5px;
   background: var(--accent-soft);
 }
 
