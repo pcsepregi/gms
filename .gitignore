@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.env
+# Helyi adatok: a valódi Excel, az adatbázis és a képek SOHA nem kerülnek a repóba.
+*.sqlite
+*.sqlite-*
+data/
+test-results/
+playwright-report/
+.tmp/
