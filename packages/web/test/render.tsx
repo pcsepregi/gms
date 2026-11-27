@@ -4,13 +4,19 @@ import { MemoryRouter } from 'react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi } from 'vitest';
 
-type Routes = Record<string, { status?: number; body: unknown }>;
+type Reply = { status?: number; body: unknown };
+type Routes = Record<string, Reply | ((init: RequestInit | undefined) => Reply)>;
 
-/** A fetch-et a megadott útvonal → válasz térképpel helyettesíti. */
+/**
+ * A fetch-et a megadott útvonal → válasz térképpel helyettesíti. A kulcs lehet
+ * `'/api/x'` vagy metódussal együtt `'PUT /api/x'`; az érték függvény is lehet.
+ */
 export function mockApi(routes: Routes) {
-  const fn = vi.fn(async (input: RequestInfo | URL) => {
+  const fn = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input.toString();
-    const r = routes[url];
+    const method = init?.method ?? 'GET';
+    const entry = routes[`${method} ${url}`] ?? (method === 'GET' ? routes[url] : undefined);
+    const r = typeof entry === 'function' ? entry(init) : entry;
     if (!r) return new Response('nem json', { status: 404 });
     return new Response(JSON.stringify(r.body), {
       status: r.status ?? 200,

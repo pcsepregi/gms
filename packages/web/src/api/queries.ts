@@ -1,9 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Card, Health, ImportSummary } from '@gms/shared';
-import { ApiError, getJson } from './client';
+import { ApiError, getJson, sendJson } from './client';
+
+export const CARDS_KEY = ['cards'] as const;
 
 export const useCards = () =>
-  useQuery({ queryKey: ['cards'], queryFn: () => getJson<Card[]>('/api/cards') });
+  useQuery({ queryKey: CARDS_KEY, queryFn: () => getJson<Card[]>('/api/cards') });
 
 export const useHealth = () =>
   useQuery({ queryKey: ['health'], queryFn: () => getJson<Health>('/api/health') });
@@ -21,3 +23,41 @@ export const useImportSummary = () =>
       }
     },
   });
+
+interface SetOwnedVars {
+  id: number;
+  owned: boolean;
+}
+
+function patchCard(list: Card[] | undefined, id: number, fn: (c: Card) => Card) {
+  return list?.map((c) => (c.id === id ? fn(c) : c));
+}
+
+/**
+ * Megvan / nincs meg jelölés optimista frissítéssel (S-20, technikai spec 8.3):
+ * a lista azonnal átvált, hiba esetén az adott kártya visszaáll.
+ */
+export function useSetOwned(handlers: {
+  onSuccess?: (card: Card, vars: SetOwnedVars) => void;
+  onError?: (vars: SetOwnedVars) => void;
+}) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, owned }: SetOwnedVars) =>
+      sendJson<Card>('PUT', `/api/cards/${id}/owned`, { owned }),
+    onMutate: async ({ id, owned }) => {
+      await qc.cancelQueries({ queryKey: CARDS_KEY });
+      qc.setQueryData<Card[]>(CARDS_KEY, (list) => patchCard(list, id, (c) => ({ ...c, owned })));
+    },
+    onError: (_err, vars) => {
+      qc.setQueryData<Card[]>(CARDS_KEY, (list) =>
+        patchCard(list, vars.id, (c) => ({ ...c, owned: !vars.owned })),
+      );
+      handlers.onError?.(vars);
+    },
+    onSuccess: (card, vars) => {
+      qc.setQueryData<Card[]>(CARDS_KEY, (list) => patchCard(list, card.id, () => card));
+      handlers.onSuccess?.(card, vars);
+    },
+  });
+}

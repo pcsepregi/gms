@@ -7,6 +7,8 @@ const executablePath = process.env.PW_CHROMIUM_PATH || undefined;
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: false,
+  // Egy közös tesztszerver és adatbázis: a jelölést módosító tesztek miatt sorban futnak.
+  workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',

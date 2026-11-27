@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { useCards } from '../api/queries';
 import { hu } from '../i18n/hu';
 
@@ -14,6 +15,13 @@ export function HomePage() {
       {cards.data && cards.data.length > 0 && (
         <p className="figure">
           {t.progress(cards.data.filter((c) => c.owned).length, cards.data.length)}
+        </p>
+      )}
+      {cards.data && cards.data.length > 0 && (
+        <p>
+          <Link className="btn" to="/kartyak">
+            {t.toList}
+          </Link>
         </p>
       )}
       <p className="muted">{t.comingSoon}</p>

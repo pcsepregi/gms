@@ -4,7 +4,8 @@ import fastifyStatic from '@fastify/static';
 import type { ApiErrorBody, Health } from '@gms/shared';
 import type { Config } from './config.js';
 import type { Db } from './db/open.js';
-import { getCard, getImportSummary, getLookups, listCards } from './cards.js';
+import { z } from 'zod';
+import { getCard, getImportSummary, getLookups, listCards, setOwned } from './cards.js';
 import { WEB_DIST_DIR } from './paths.js';
 
 export interface AppOptions {
@@ -28,6 +29,8 @@ export function sendError(
   };
   return reply.code(status).send(body);
 }
+
+const ownedBodySchema = z.object({ owned: z.boolean() }).strict();
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -72,6 +75,17 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
   app.get<{ Params: { id: string } }>('/api/cards/:id', async (req, reply) => {
     const id = Number(req.params.id);
     const card = Number.isInteger(id) && id > 0 ? getCard(db, id) : null;
+    if (!card) return sendError(reply, 404, 'NOT_FOUND', 'A kártya nem található.');
+    return card;
+  });
+
+  app.put<{ Params: { id: string } }>('/api/cards/:id/owned', async (req, reply) => {
+    const id = Number(req.params.id);
+    const body = ownedBodySchema.safeParse(req.body);
+    if (!body.success) {
+      return sendError(reply, 400, 'VALIDATION', 'Hibás kérés: az "owned" mező igaz/hamis legyen.');
+    }
+    const card = Number.isInteger(id) && id > 0 ? setOwned(db, id, body.data.owned) : null;
     if (!card) return sendError(reply, 404, 'NOT_FOUND', 'A kártya nem található.');
     return card;
   });

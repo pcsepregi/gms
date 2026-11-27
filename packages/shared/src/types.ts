@@ -27,7 +27,7 @@ export interface Card {
   setCode: string | null;
   cardNumber: string;
   finish: Pick<Finish, 'id' | 'name' | 'description'>;
-  language: Pick<Language, 'id' | 'name' | 'nameHu' | 'shortCode'>;
+  language: Pick<Language, 'id' | 'name' | 'nameHu' | 'shortCode' | 'sortOrder'>;
   note: string;
   image: { status: ImageStatus; url: string | null; languageId: number | null };
   createdAt: string;
