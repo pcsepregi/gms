@@ -1,5 +1,5 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import {
   hasActiveFilters,
   queryCards,
@@ -11,12 +11,15 @@ import {
 } from '@gms/shared';
 import { useCards } from '../api/queries';
 import { CardDetails } from '../components/CardDetails';
+import { CardForm } from '../components/CardForm';
+import { Panel } from '../components/Panel';
+import { useToast } from '../components/Toasts';
 import { CardGrid } from '../components/CardGrid';
 import { CardTable } from '../components/CardTable';
 import { FilterMenu, type FilterOption } from '../components/FilterMenu';
-import { CloseIcon, GridIcon, ListIcon, SearchIcon, SortIcon } from '../components/icons';
+import { CloseIcon, GridIcon, ListIcon, PlusIcon, SearchIcon, SortIcon } from '../components/icons';
 import { useCardQuery } from '../hooks/useCardQuery';
-import { useOwnedToggle } from '../hooks/useOwnedToggle';
+import { cardName, useOwnedToggle } from '../hooks/useOwnedToggle';
 import { useViewMode } from '../hooks/useViewMode';
 import { hu } from '../i18n/hu';
 
@@ -76,7 +79,7 @@ function isTypingTarget(el: EventTarget | null): boolean {
   return el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
 }
 
-export function CardsPage() {
+export function CardsPage({ creating = false }: { creating?: boolean }) {
   const cardsQuery = useCards();
   const allCards = useMemo(() => cardsQuery.data ?? [], [cardsQuery.data]);
   const { query, params, update, clear } = useCardQuery();
@@ -84,6 +87,7 @@ export function CardsPage() {
   const toggle = useOwnedToggle();
   const navigate = useNavigate();
   const { id } = useParams();
+  const toast = useToast();
   const options = useOptions(allCards);
 
   // Keresőmező: helyi állapot, az URL-be azonnal (cserével) kerül, így nem
@@ -123,7 +127,7 @@ export function CardsPage() {
   const missing = useMemo(() => shown.filter((c) => !c.owned).length, [shown]);
 
   const linkSearch = params.toString() ? `?${params.toString()}` : '';
-  const selectedId = id === undefined ? null : Number(id);
+  const selectedId = creating || id === undefined ? null : Number(id);
   const selected = selectedId === null ? null : (allCards.find((c) => c.id === selectedId) ?? null);
   const closeDetails = useCallback(
     () => navigate({ pathname: '/kartyak', search: linkSearch }),
@@ -179,6 +183,10 @@ export function CardsPage() {
           {cardsQuery.data ? t.count(shown.length, missing) : ''}
         </p>
         <div className="toolbar-end">
+          <Link className="btn btn-primary" to={`/kartyak/uj${linkSearch}`}>
+            <PlusIcon />
+            {t.newCard}
+          </Link>
           <label className="sort">
             <span className="sr-only">{t.sort.label}</span>
             <select
@@ -328,6 +336,19 @@ export function CardsPage() {
         ) : (
           <CardTable cards={shown} linkSearch={linkSearch} onToggle={toggle} />
         ))}
+
+      {creating && (
+        <Panel title={hu.form.newHeading} onClose={closeDetails} testId="new-card">
+          <CardForm
+            card={null}
+            onCancel={closeDetails}
+            onSaved={(card) => {
+              toast({ message: hu.toast.created(cardName(card)) });
+              navigate({ pathname: `/kartyak/${card.id}`, search: linkSearch });
+            }}
+          />
+        </Panel>
+      )}
 
       {selectedId !== null && (
         <CardDetails

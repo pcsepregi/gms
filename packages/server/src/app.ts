@@ -6,6 +6,15 @@ import type { Config } from './config.js';
 import type { Db } from './db/open.js';
 import { z } from 'zod';
 import { getCard, getImportSummary, getLookups, listCards, setOwned } from './cards.js';
+import {
+  createCard,
+  createFinish,
+  createLanguage,
+  deleteCard,
+  EditError,
+  updateCard,
+  updateFinish,
+} from './editing.js';
 import { WEB_DIST_DIR } from './paths.js';
 
 export interface AppOptions {
@@ -90,7 +99,47 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
     return card;
   });
 
+  /** Pozitív egész azonosító az útvonalból; ha nem az, `null` (→ 404). */
+  const idParam = (raw: string): number | null => {
+    const id = Number(raw);
+    return Number.isInteger(id) && id > 0 ? id : null;
+  };
+  const cardNotFound = (reply: FastifyReply) =>
+    sendError(reply, 404, 'NOT_FOUND', 'A kártya nem található.');
+
+  app.post('/api/cards', async (req, reply) => {
+    const card = createCard(db, req.body ?? {});
+    return reply.code(201).send(card);
+  });
+
+  app.patch<{ Params: { id: string } }>('/api/cards/:id', async (req, reply) => {
+    const id = idParam(req.params.id);
+    if (id === null) return cardNotFound(reply);
+    return updateCard(db, config.imagesDir, id, req.body ?? {});
+  });
+
+  app.delete<{ Params: { id: string } }>('/api/cards/:id', async (req, reply) => {
+    const id = idParam(req.params.id);
+    if (id === null) return cardNotFound(reply);
+    deleteCard(db, config.imagesDir, id);
+    return reply.code(204).send();
+  });
+
   app.get('/api/lookups', async () => getLookups(db));
+
+  app.post('/api/finishes', async (req, reply) =>
+    reply.code(201).send(createFinish(db, req.body ?? {})),
+  );
+
+  app.patch<{ Params: { id: string } }>('/api/finishes/:id', async (req, reply) => {
+    const id = idParam(req.params.id);
+    if (id === null) return sendError(reply, 404, 'NOT_FOUND', 'A nyomási változat nem található.');
+    return updateFinish(db, id, req.body ?? {});
+  });
+
+  app.post('/api/languages', async (req, reply) =>
+    reply.code(201).send(createLanguage(db, req.body ?? {})),
+  );
 
   app.get('/api/import/summary', async (_req, reply) => {
     const summary = getImportSummary(db);
@@ -113,6 +162,9 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
   });
 
   app.setErrorHandler((err, _req, reply) => {
+    if (err instanceof EditError) {
+      return sendError(reply, err.status, err.code, err.message, err.details);
+    }
     app.log.error(err);
     const status = (err as { statusCode?: number }).statusCode ?? 500;
     if (status < 500) return sendError(reply, status, 'BAD_REQUEST', 'Hibás kérés.');

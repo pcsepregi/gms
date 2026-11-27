@@ -18,6 +18,7 @@ export function mockApi(routes: Routes) {
     const entry = routes[`${method} ${url}`] ?? (method === 'GET' ? routes[url] : undefined);
     const r = typeof entry === 'function' ? entry(init) : entry;
     if (!r) return new Response('nem json', { status: 404 });
+    if (r.status === 204) return new Response(null, { status: 204 });
     return new Response(JSON.stringify(r.body), {
       status: r.status ?? 200,
       headers: { 'content-type': 'application/json' },
