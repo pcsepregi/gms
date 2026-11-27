@@ -5,6 +5,7 @@ export class ApiError extends Error {
     readonly status: number,
     readonly code: string,
     message: string,
+    readonly details?: unknown,
   ) {
     super(message);
   }
@@ -22,8 +23,10 @@ async function parse<T>(res: Response): Promise<T> {
       res.status,
       body?.error.code ?? 'HTTP',
       body?.error.message ?? res.statusText,
+      body?.error.details,
     );
   }
+  if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
 
@@ -39,4 +42,27 @@ export async function sendJson<T>(method: 'POST' | 'PUT' | 'PATCH', url: string,
       body: JSON.stringify(body),
     }),
   );
+}
+
+export async function deleteJson(url: string): Promise<void> {
+  return parse<void>(
+    await fetch(url, { method: 'DELETE', headers: { accept: 'application/json' } }),
+  );
+}
+
+/** A `400 VALIDATION` válasz mezőnkénti hibái. */
+export function errorFields(err: unknown): Record<string, string> {
+  if (err instanceof ApiError && err.code === 'VALIDATION' && err.details) {
+    return err.details as Record<string, string>;
+  }
+  return {};
+}
+
+/** A `409 DUPLICATE` válaszban a meglévő rekord azonosítója. */
+export function duplicateId(err: unknown): number | null {
+  if (err instanceof ApiError && err.code === 'DUPLICATE') {
+    const id = (err.details as { id?: unknown } | undefined)?.id;
+    return typeof id === 'number' ? id : null;
+  }
+  return null;
 }

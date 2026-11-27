@@ -1,5 +1,6 @@
 import type { ImportSummary } from '@gms/shared';
 import { useHealth, useImportSummary } from '../api/queries';
+import { FinishDictionary } from '../components/FinishDictionary';
 import { hu } from '../i18n/hu';
 
 const t = hu.settings;
@@ -83,6 +84,8 @@ export function SettingsPage() {
       {summary.isError && <p role="alert">{hu.common.loadError}</p>}
       {summary.data === null && <p>{t.notImported}</p>}
       {summary.data && <ImportSummaryView summary={summary.data} />}
+      <h2>{t.finishesHeading}</h2>
+      <FinishDictionary />
       {health.data && (
         <p className="muted">
           {t.version}: {health.data.version}

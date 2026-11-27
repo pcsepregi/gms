@@ -1,8 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Card, Health, ImportSummary } from '@gms/shared';
-import { ApiError, getJson, sendJson } from './client';
+import type {
+  Card,
+  CardInput,
+  Finish,
+  FinishInput,
+  Health,
+  ImportSummary,
+  Language,
+  LanguageInput,
+  Lookups,
+} from '@gms/shared';
+import { ApiError, deleteJson, getJson, sendJson } from './client';
 
 export const CARDS_KEY = ['cards'] as const;
+export const LOOKUPS_KEY = ['lookups'] as const;
+
+/** Nyelvek, finish-ek, meglévő Pokémon- és setnevek az űrlap javaslataihoz. */
+export const useLookups = () =>
+  useQuery({ queryKey: LOOKUPS_KEY, queryFn: () => getJson<Lookups>('/api/lookups') });
 
 export const useCards = () =>
   useQuery({ queryKey: CARDS_KEY, queryFn: () => getJson<Card[]>('/api/cards') });
@@ -59,5 +74,75 @@ export function useSetOwned(handlers: {
       qc.setQueryData<Card[]>(CARDS_KEY, (list) => patchCard(list, card.id, () => card));
       handlers.onSuccess?.(card, vars);
     },
+  });
+}
+
+/** A kártyák és a javaslatok frissítése egy módosítás után (a azonosítók is változhatnak). */
+function useRefreshAll() {
+  const qc = useQueryClient();
+  return () =>
+    Promise.all([
+      qc.invalidateQueries({ queryKey: CARDS_KEY }),
+      qc.invalidateQueries({ queryKey: LOOKUPS_KEY }),
+    ]);
+}
+
+export function useSaveCard() {
+  const qc = useQueryClient();
+  const refresh = useRefreshAll();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number | null; input: CardInput }) =>
+      id === null
+        ? sendJson<Card>('POST', '/api/cards', input)
+        : sendJson<Card>('PATCH', `/api/cards/${id}`, input),
+    onSuccess: async (card) => {
+      // Azonnal látszik (S-23/EF4), a háttérben a teljes lista is frissül.
+      qc.setQueryData<Card[]>(
+        CARDS_KEY,
+        (list) =>
+          list &&
+          (list.some((c) => c.id === card.id)
+            ? patchCard(list, card.id, () => card)
+            : [...list, card]),
+      );
+      await refresh();
+    },
+  });
+}
+
+export function useDeleteCard() {
+  const qc = useQueryClient();
+  const refresh = useRefreshAll();
+  return useMutation({
+    mutationFn: (id: number) => deleteJson(`/api/cards/${id}`),
+    onSuccess: async (_v, id) => {
+      qc.setQueryData<Card[]>(CARDS_KEY, (list) => list?.filter((c) => c.id !== id));
+      await refresh();
+    },
+  });
+}
+
+export function useCreateFinish() {
+  const refresh = useRefreshAll();
+  return useMutation({
+    mutationFn: (input: FinishInput) => sendJson<Finish>('POST', '/api/finishes', input),
+    onSuccess: () => refresh(),
+  });
+}
+
+export function useUpdateFinish() {
+  const refresh = useRefreshAll();
+  return useMutation({
+    mutationFn: ({ id, description }: { id: number; description: string }) =>
+      sendJson<Finish>('PATCH', `/api/finishes/${id}`, { description }),
+    onSuccess: () => refresh(),
+  });
+}
+
+export function useCreateLanguage() {
+  const refresh = useRefreshAll();
+  return useMutation({
+    mutationFn: (input: LanguageInput) => sendJson<Language>('POST', '/api/languages', input),
+    onSuccess: () => refresh(),
   });
 }

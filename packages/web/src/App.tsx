@@ -28,6 +28,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/kartyak" element={<CardsPage />} />
+          <Route path="/kartyak/uj" element={<CardsPage creating />} />
           <Route path="/kartyak/:id" element={<CardsPage />} />
           <Route path="/beallitasok" element={<SettingsPage />} />
         </Routes>

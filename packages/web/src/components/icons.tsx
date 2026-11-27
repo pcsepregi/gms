@@ -54,3 +54,8 @@ export const ListIcon = () => (
     <path d="M2.5 4h11M2.5 8h11M2.5 12h11" />
   </svg>
 );
+export const PlusIcon = () => (
+  <svg {...base}>
+    <path d="M8 3v10M3 8h10" />
+  </svg>
+);
