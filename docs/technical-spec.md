@@ -233,7 +233,8 @@ Minden végpont JSON-t ad és vár. Hibaformátum: `{ "error": { "code": "DUPLIC
 | GET | `/api/export?format=xlsx\|csv&ids=…` | Export; `ids` nélkül a teljes gyűjtemény (10.) |
 | GET | `/api/backup/status` | Utolsó mentés ideje, állapota, cél mappa |
 | POST | `/api/backup/run` | Azonnali mentés |
-| GET | `/api/health` | `{ ok, version, dbPath }` |
+| GET | `/api/import/summary` | Az import összesítője (`app_meta.import_summary`); `404 NOT_IMPORTED`, ha még nem volt import |
+| GET | `/api/health` | `{ ok, version, dbPath, appTitle }` |
 
 Az `/api/cards` válaszában minden kártyánál ott van a `display_id`, a nyelv és a finish neve (join), valamint a kép URL-je és állapota, hogy a kliensnek ne kelljen külön feloldania.
 
