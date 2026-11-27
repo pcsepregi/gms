@@ -80,7 +80,7 @@ function toFields(r: StoredCard): CardFields {
 
 function parseCard(input: unknown): CardFields {
   const parsed = cardInputSchema.safeParse(input);
-  if (!parsed.success) throw validationError(fieldErrors(parsed.error));
+  if (!parsed.success) throw validationError(fieldErrors(parsed.error, input));
   return parsed.data;
 }
 
@@ -266,7 +266,7 @@ const toFinish = (r: FinishRow): Finish => ({
 /** Új nyomási változat (S-64/EF2). Kis-/nagybetűtől független névegyezésnél `409`. */
 export function createFinish(db: Db, input: unknown): Finish {
   const parsed = finishInputSchema.safeParse(input);
-  if (!parsed.success) throw validationError(fieldErrors(parsed.error));
+  if (!parsed.success) throw validationError(fieldErrors(parsed.error, input));
   const { name, description } = parsed.data;
   return db.transaction(() => {
     const existing = (db.prepare('SELECT * FROM finish').all() as FinishRow[]).find(
@@ -292,7 +292,7 @@ export function createFinish(db: Db, input: unknown): Finish {
 /** Nyomási változat leírásának módosítása (S-64/EF1). */
 export function updateFinish(db: Db, id: number, input: unknown): Finish {
   const parsed = finishPatchSchema.safeParse(input);
-  if (!parsed.success) throw validationError(fieldErrors(parsed.error));
+  if (!parsed.success) throw validationError(fieldErrors(parsed.error, input));
   const res = db
     .prepare('UPDATE finish SET description = ? WHERE id = ?')
     .run(parsed.data.description, id);
@@ -306,7 +306,7 @@ export function updateFinish(db: Db, id: number, input: unknown): Finish {
  */
 export function createLanguage(db: Db, input: unknown): Language {
   const parsed = languageInputSchema.safeParse(input);
-  if (!parsed.success) throw validationError(fieldErrors(parsed.error));
+  if (!parsed.success) throw validationError(fieldErrors(parsed.error, input));
   const { name } = parsed.data;
   return db.transaction(() => {
     const rows = db.prepare('SELECT id, name, name_hu, short_code FROM language').all() as {

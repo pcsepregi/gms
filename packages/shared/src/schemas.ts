@@ -105,8 +105,12 @@ export const languageInputSchema = z
 export type LanguageInput = z.input<typeof languageInputSchema>;
 
 /** Zod hibák mezőnként (az első üzenet mezőnként), a `400 VALIDATION` válasz `details` része. */
-export function fieldErrors(error: z.ZodError): Record<string, string> {
+export function fieldErrors(error: z.ZodError, input?: unknown): Record<string, string> {
   const out: Record<string, string> = {};
+  const given = (field: string) =>
+    typeof input === 'object' &&
+    input !== null &&
+    (input as Record<string, unknown>)[field] != null;
   for (const issue of error.issues) {
     const field = issue.path.length ? String(issue.path[0]) : '_';
     if (!(field in out)) {
@@ -114,7 +118,7 @@ export function fieldErrors(error: z.ZodError): Record<string, string> {
         issue.code === 'unrecognized_keys'
           ? `Ismeretlen mező: ${issue.keys.join(', ')}`
           : issue.code === 'invalid_type'
-            ? field === '_' || issue.input === undefined
+            ? field === '_' || !given(field)
               ? 'Kötelező mező.'
               : 'Hibás érték.'
             : issue.message;
@@ -134,6 +138,7 @@ export function deriveShortCode(name: string, taken: ReadonlySet<string>): strin
       .replace(/\p{M}/gu, '')
       .replace(/[^A-Za-z0-9]/gu, '')
       .toUpperCase() || 'X';
+  if (letters.length < 2 && !taken.has(letters)) return letters;
   for (let len = 2; len <= Math.min(letters.length, 4); len++) {
     const code = letters.slice(0, len);
     if (!taken.has(code)) return code;
