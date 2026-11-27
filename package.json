@@ -25,6 +25,7 @@
     "fixtures": "tsx scripts/make-fixtures.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.1",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.56.1",
     "@types/node": "^22.19.1",

@@ -10,8 +10,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, { headers: { accept: 'application/json' } });
+async function parse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let body: ApiErrorBody | null;
     try {
@@ -26,4 +25,18 @@ export async function getJson<T>(url: string): Promise<T> {
     );
   }
   return (await res.json()) as T;
+}
+
+export async function getJson<T>(url: string): Promise<T> {
+  return parse<T>(await fetch(url, { headers: { accept: 'application/json' } }));
+}
+
+export async function sendJson<T>(method: 'POST' | 'PUT' | 'PATCH', url: string, body: unknown) {
+  return parse<T>(
+    await fetch(url, {
+      method,
+      headers: { accept: 'application/json', 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  );
 }

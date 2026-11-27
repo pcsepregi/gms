@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
     <title>GMS</title>
+    <script>
+      // A mentett téma beállítása még a megjelenítés előtt, hogy ne villanjon (S-62).
+      try {
+        var t = localStorage.getItem('gms.theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

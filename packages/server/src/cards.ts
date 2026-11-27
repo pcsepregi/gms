@@ -23,6 +23,7 @@ interface CardRow {
   language_name: string;
   language_name_hu: string;
   language_short_code: string;
+  language_sort_order: number;
 }
 
 const CARD_SELECT = `
@@ -30,7 +31,7 @@ const CARD_SELECT = `
          c.image_file, c.image_status, c.image_lang_id, c.created_at, c.updated_at,
          f.id AS finish_id, f.name AS finish_name, f.description AS finish_description,
          l.id AS language_id, l.name AS language_name, l.name_hu AS language_name_hu,
-         l.short_code AS language_short_code
+         l.short_code AS language_short_code, l.sort_order AS language_sort_order
   FROM card c
   JOIN finish f ON f.id = c.finish_id
   JOIN language l ON l.id = c.language_id`;
@@ -50,6 +51,7 @@ function toCard(r: CardRow): Card {
       name: r.language_name,
       nameHu: r.language_name_hu,
       shortCode: r.language_short_code,
+      sortOrder: r.language_sort_order,
     },
     note: r.note,
     image: {
@@ -134,4 +136,17 @@ export function getLookups(db: Db): Lookups {
 export function getImportSummary(db: Db): ImportSummary | null {
   const raw = getMeta(db, 'import_summary');
   return raw ? (JSON.parse(raw) as ImportSummary) : null;
+}
+
+/**
+ * Megvan / nincs meg jelölés (S-20). Idempotens: ha az érték nem változik, semmi
+ * sem íródik, így az `owned_changed_at` csak valódi változáskor frissül.
+ */
+export function setOwned(db: Db, id: number, owned: boolean, now = new Date()): Card | null {
+  const ts = now.toISOString();
+  db.prepare(
+    `UPDATE card SET owned = @owned, owned_changed_at = @ts, updated_at = @ts
+     WHERE id = @id AND owned <> @owned`,
+  ).run({ id, owned: owned ? 1 : 0, ts });
+  return getCard(db, id);
 }
