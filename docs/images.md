@@ -52,3 +52,17 @@ nélkül; a koreai és egyszerűsített kínai lapok egyáltalán nincsenek benn
 japán megfelelő képe jöhet tartalékként (azonos setkód és szám esetén, pl. SV1S, SV3, SV4a).
 
 Javítás után a kép nélküli lapok újrakeresése: `npm run ops -- images-retry`.
+
+## Hivatalos ázsiai és koreai források, Limitless (2026-11-28)
+
+A TCGdex után, ugyanabban a sorrendben minden nyelvre (saját nyelv, majd tartalékok):
+
+| Forrás | Nyelv | Hogyan keres |
+| --- | --- | --- |
+| asia.pokemon-card.com | thai (`th`), indonéz (`id`), hagyományos kínai (`zh-tw` → `tw`) | Névkeresés a helyi névvel (`LOCAL_POKEMON_NAMES` a `config.ts`-ben; ha nincs, a kártya neve), a találatok részletes oldalán a gyűjtői szám és a set jelének fájlneve (pl. `sv4a_th.png` → SV4A) dönt. |
+| pokemoncard.co.kr | koreai (`ko`) | A kép címe a setkódból és a 3 jegyű számból áll össze (`wmimages/SV/SV1S/SV1S_068.webp`); csak SV setkódokra. |
+| limitlesstcg.com | japán (`ja`) | A kép címe a setkódból kötőjel nélkül (SV-P → SVP) és a számból (`tpc/SVAL/SVAL_9_R_JP.png`); a kezdőpaklik és promók is megvannak. |
+
+Az egyszerűsített kínai (zh-cn) lapokhoz nincs hivatalos adatbázis; ezekhez a kártya
+részleteinél a "Saját kép megadása" való. A képek jogai a Pokémon / Nintendo / Creatures /
+GAME FREAK tulajdonában vannak; az alkalmazás csak helyi, személyes használatra tölti le őket.
