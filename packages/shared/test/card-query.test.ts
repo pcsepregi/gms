@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_QUERY,
+  NO_SET_CODE,
   cardNumberValue,
   compareCardNumbers,
   filterCards,
@@ -112,6 +113,16 @@ describe('szűrés (S-13)', () => {
     expect(ids(filterCards(all, q({ image: ['none'], pokemon: ['P1'] })))).toEqual([]);
   });
 
+  it('setkód szűrő: több kód VAGY kapcsolatban, a kód nélküli lapok külön értéken', () => {
+    const a = makeCard({ setCode: 'SVI' });
+    const b = makeCard({ setCode: 'PAF' });
+    const c = makeCard({ setCode: null });
+    const all = [a, b, c];
+    expect(ids(filterCards(all, q({ setCodes: ['SVI'] })))).toEqual([a.id]);
+    expect(ids(filterCards(all, q({ setCodes: ['SVI', 'PAF'] })))).toEqual([a.id, b.id]);
+    expect(ids(filterCards(all, q({ setCodes: [NO_SET_CODE] })))).toEqual([c.id]);
+  });
+
   it('hasActiveFilters: a rendezés nem számít szűrőnek', () => {
     expect(hasActiveFilters(DEFAULT_QUERY)).toBe(false);
     expect(hasActiveFilters(q({ sort: 'pokemon', dir: 'desc' }))).toBe(false);
@@ -120,6 +131,7 @@ describe('szűrés (S-13)', () => {
       { pokemon: ['a'] },
       { languages: ['DE'] },
       { sets: ['s'] },
+      { setCodes: ['SVI'] },
       { finishes: ['f'] },
       { owned: 'owned' as const },
       { image: ['none' as const] },
@@ -218,6 +230,7 @@ describe('URL paraméterek (S-16)', () => {
       pokemon: ['Pokemon A', 'Pokemon, B'],
       languages: ['DE', 'FR'],
       sets: ['Scarlet & Violet', 'Set, with comma'],
+      setCodes: ['SVI', 'PAF'],
       finishes: ['Reverse Holo'],
       owned: 'missing',
       image: ['fallback', 'none'],
@@ -226,6 +239,7 @@ describe('URL paraméterek (S-16)', () => {
     });
     const params = queryToParams(query);
     expect(params.get('nyelv')).toBe('DE,FR');
+    expect(params.get('setkod')).toBe('SVI,PAF');
     expect(params.get('allapot')).toBe('hianyzik');
     expect(params.get('kep')).toBe('tartalek,nincs');
     expect(params.get('rendezes')).toBe('szam');

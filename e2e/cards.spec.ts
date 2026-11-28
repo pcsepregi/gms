@@ -22,7 +22,7 @@ test.describe('kártyalista (S-10, S-11)', () => {
       page.locator('[data-testid=card][data-owned=true]').first().getByText('Hiányzik'),
     ).toHaveCount(0);
     const promo = cards(page).filter({ hasText: '007/SV-P' });
-    for (const text of ['Oinkologne ex', 'SV Black Star Promos', 'Holo', 'Angol']) {
+    for (const text of ['Oinkologne ex', 'SV Black Star Promos', 'SVP', 'Holo', 'Angol']) {
       await expect(promo.getByText(text, { exact: true }).first()).toBeVisible();
     }
   });
@@ -69,6 +69,7 @@ test.describe('kártyalista (S-10, S-11)', () => {
       'Kép',
       'Pokémon',
       'Set',
+      'Setkód',
       'Szám',
       'Nyomási változat',
       'Nyelv',

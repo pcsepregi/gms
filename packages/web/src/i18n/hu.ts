@@ -40,6 +40,7 @@ export const hu = {
     recentNone: 'Még nem jelöltél meg új lapot az appban.',
     openMissing: 'a hiányzó lapok megnyitása',
     legend: 'Jelmagyarázat',
+    strip: 'Véletlen kártyák a gyűjteményből',
     legendMissing: 'Hiányzik',
     segmentTitle: (context: string, pokemon: string, n: number) =>
       `${context} · ${pokemon}: ${n} megvan`,
@@ -63,6 +64,7 @@ export const hu = {
       pokemon: 'Pokémon',
       language: 'Nyelv',
       set: 'Set',
+      setCode: 'Setkód',
       finish: 'Nyomási változat',
       image: 'Kép',
       search: 'Keresés',
@@ -112,6 +114,7 @@ export const hu = {
       image: 'Kép',
       pokemon: 'Pokémon',
       set: 'Set',
+      setCode: 'Setkód',
       number: 'Szám',
       finish: 'Nyomási változat',
       language: 'Nyelv',
@@ -119,6 +122,7 @@ export const hu = {
     },
     imageFallback: (lang: string) => `Kép: ${lang.toLocaleLowerCase('hu')}`,
     imageSearching: 'Kép keresése…',
+    noSetCode: 'Nincs setkód',
   },
   details: {
     close: 'Bezárás',

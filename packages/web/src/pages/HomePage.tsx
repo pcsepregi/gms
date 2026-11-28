@@ -10,6 +10,7 @@ import {
 } from '@gms/shared';
 import { useStats } from '../api/queries';
 import { CardImage } from '../components/CardImage';
+import { CardStrip } from '../components/CardStrip';
 import { Donut, type DonutSegment } from '../components/Donut';
 import { hu } from '../i18n/hu';
 
@@ -191,6 +192,10 @@ export function HomePage() {
               <h2 id="dash-lang">{t.languages}</h2>
               <LanguageDonuts groups={s.byLanguage} colors={colors} />
             </section>
+
+            <div className="dash-wide">
+              <CardStrip />
+            </div>
 
             <section className="dash-card" aria-labelledby="dash-closest">
               <h2 id="dash-closest">{t.closest}</h2>

@@ -1754,3 +1754,43 @@ h3 {
     flex: 1 1 100%;
   }
 }
+
+/* Setkód: a kártyára nyomtatott rövid kód, egyenletes szélességű számjegyekkel. */
+.set-code {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.tile-meta .set-code {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Áttekintő: 15 véletlen kártyakép egy sorban, a szélességhez igazodva. */
+.card-strip ul {
+  display: grid;
+  grid-template-columns: repeat(15, minmax(0, 1fr));
+  gap: calc(var(--space) * 2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card-strip a {
+  display: block;
+  border-radius: 5px;
+  transition: transform 150ms;
+}
+
+.card-strip a:hover {
+  transform: translateY(-2px);
+}
+
+.card-strip img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 5px;
+  background: var(--surface-2);
+}

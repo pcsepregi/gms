@@ -31,6 +31,7 @@ export function CardTable({ cards, linkSearch, onToggle }: Props) {
             </th>
             <th scope="col">{t.columns.pokemon}</th>
             <th scope="col">{t.columns.set}</th>
+            <th scope="col">{t.columns.setCode}</th>
             <th scope="col">{t.columns.number}</th>
             <th scope="col">{t.columns.finish}</th>
             <th scope="col">{t.columns.language}</th>
@@ -57,6 +58,7 @@ export function CardTable({ cards, linkSearch, onToggle }: Props) {
                 <Link to={{ pathname: `/kartyak/${c.id}`, search: linkSearch }}>{c.pokemon}</Link>
               </td>
               <td>{c.setName}</td>
+              <td className="set-code">{c.setCode ?? '–'}</td>
               <td className="num">{c.cardNumber}</td>
               <td>{c.finish.name}</td>
               <td>{c.language.nameHu}</td>

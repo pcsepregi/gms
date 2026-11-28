@@ -45,6 +45,7 @@ const CARDS: Card[] = [
     owned: true,
     lang: 'DE',
     setName: 'Második set',
+    setCode: 'MS',
     cardNumber: '007/SV-P',
     image: {
       status: 'fallback',
@@ -119,6 +120,7 @@ describe('kártyalista (S-10, S-11)', () => {
       'Kép',
       'Pokémon',
       'Set',
+      'Setkód',
       'Szám',
       'Nyomási változat',
       'Nyelv',
@@ -207,6 +209,23 @@ describe('keresés és szűrés (S-12 … S-16)', () => {
     expect(count()).toBe('1 kártya, ebből 0 hiányzik');
     fireEvent.click(screen.getByRole('button', { name: 'Kijelölés törlése' }));
     expect(count()).toBe('4 kártya, ebből 2 hiányzik');
+  });
+
+  it('setkód szűrő: a kód mellett a setnév, címke, URL; a kód a kártyán is látszik', async () => {
+    renderCards();
+    await waitFor(() => expect(shownCards()).toHaveLength(4));
+    expect(shownCards()[0]!.querySelector('.tile-meta')).toHaveTextContent('ES 1/10 · Normal');
+    fireEvent.click(screen.getByRole('button', { name: 'Setkód' }));
+    const panel = screen.getByRole('group', { name: 'Setkód' });
+    expect(
+      within(panel)
+        .getAllByRole('checkbox')
+        .map((c) => c.closest('label')!.textContent),
+    ).toEqual(['ES – Első set3', 'MS – Második set1']);
+    fireEvent.click(within(panel).getByRole('checkbox', { name: /MS/u }));
+    expect(location()).toBe('/kartyak?setkod=MS');
+    expect(count()).toBe('1 kártya, ebből 0 hiányzik');
+    expect(screen.getByRole('button', { name: 'Szűrő törlése: Setkód: MS' })).toBeInTheDocument();
   });
 
   it('T-FLT-04 (S-14): címkék; az x egyet töröl, az "Összes törlése" mindent', async () => {

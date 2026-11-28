@@ -1,8 +1,10 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import {
+  NO_SET_CODE,
   hasActiveFilters,
   queryCards,
+  setCodeKey,
   type Card,
   type CardQuery,
   type ImageFilter,
@@ -56,9 +58,30 @@ function useOptions(cards: readonly Card[]) {
         });
     }
     const imageCounts = countBy(cards, (c) => c.image.status);
+    // Setkód → a hozzá tartozó setnevek (a szűrőben segítségnek a kód mellett).
+    const codeNames = new Map<string, Set<string>>();
+    for (const c of cards) {
+      const k = setCodeKey(c);
+      if (!codeNames.has(k)) codeNames.set(k, new Set());
+      codeNames.get(k)!.add(c.setName);
+    }
+    const codeLabel = (code: string) =>
+      code === NO_SET_CODE
+        ? t.noSetCode
+        : `${code} – ${[...(codeNames.get(code) ?? [])].join(', ')}`;
     return {
       pokemon: textOptions(cards, (c) => c.pokemon),
       sets: textOptions(cards, (c) => c.setName),
+      setCodes: [...countBy(cards, setCodeKey)]
+        .map(([value, count]) => ({ value, label: codeLabel(value), count }))
+        .sort((a, b) =>
+          a.value === NO_SET_CODE
+            ? 1
+            : b.value === NO_SET_CODE
+              ? -1
+              : a.value.localeCompare(b.value),
+        ),
+      setCodeLabel: (code: string) => (code === NO_SET_CODE ? t.noSetCode : code),
       finishes: textOptions(cards, (c) => c.finish.name),
       languages: [...langs]
         .sort((a, b) => a[1].order - b[1].order)
@@ -83,6 +106,7 @@ function exportName(q: CardQuery): string {
   if (q.languages.length === 1) parts.push(q.languages[0]!.toLowerCase());
   if (q.pokemon.length === 1) parts.push(q.pokemon[0]!);
   if (q.sets.length === 1) parts.push(q.sets[0]!);
+  if (q.setCodes.length === 1 && q.setCodes[0] !== NO_SET_CODE) parts.push(q.setCodes[0]!);
   return parts.join(' ') || 'lista';
 }
 
@@ -182,6 +206,11 @@ export function CardsPage({ creating = false }: { creating?: boolean }) {
       key: `s:${v}`,
       label: `${t.filters.set}: ${v}`,
       remove: { sets: query.sets.filter((x) => x !== v) },
+    })),
+    ...query.setCodes.map((v) => ({
+      key: `sc:${v}`,
+      label: `${t.filters.setCode}: ${options.setCodeLabel(v)}`,
+      remove: { setCodes: query.setCodes.filter((x) => x !== v) },
     })),
     ...query.finishes.map((v) => ({
       key: `f:${v}`,
@@ -301,6 +330,13 @@ export function CardsPage({ creating = false }: { creating?: boolean }) {
             selected={query.sets}
             onChange={(sets) => update({ sets })}
             searchable
+          />
+          <FilterMenu
+            label={t.filters.setCode}
+            options={options.setCodes}
+            selected={query.setCodes}
+            onChange={(setCodes) => update({ setCodes })}
+            searchable={options.setCodes.length > 10}
           />
           <FilterMenu
             label={t.filters.finish}
