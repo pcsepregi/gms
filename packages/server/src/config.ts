@@ -84,3 +84,13 @@ export function ensureDataDirs(config: Config): void {
   fs.mkdirSync(config.dataDir, { recursive: true });
   fs.mkdirSync(config.imagesDir, { recursive: true });
 }
+
+/**
+ * A Pokémonok helyi (nem latin betűs) nevei a képforrások névkeresőihez, képkód szerint.
+ * Ahol nincs bejegyzés, ott a kártyán szereplő (angol) nevet keressük. Az "ex" és más
+ * változatok a névkeresésben benne vannak, a lapot a szám és a set választja ki.
+ */
+export const LOCAL_POKEMON_NAMES: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  lechonk: { th: 'กูร์ตง', 'zh-tw': '愛吃豚', ja: 'グルトン', ko: '맛보돈' },
+  oinkologne: { th: 'เพอร์ฟูตง', 'zh-tw': '飄香豚', ja: 'パフュートン', ko: '퍼퓨돈' },
+};
