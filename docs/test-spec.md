@@ -28,6 +28,7 @@
 | Végponttól végpontig (E) | Playwright (Chromium és WebKit) | Valódi szerver + build, felhasználói folyamatok böngészőben | CI, minden PR |
 | Vizuális / akadálymentesség (V) | Playwright képernyőképek + `@axe-core/playwright` | Világos és sötét mód, kontraszt, billentyűzetes kezelés | CI, minden PR; a képernyőképek változása review-t igényel |
 | Teljesítmény (P) | Vitest bench, Playwright időmérés | Keresés/szűrés ideje 400 és 5000 kártyánál | CI, minden PR |
+| Telepítési (I) | `scripts/smoke-install.sh` ideiglenes HOME-mal és fixture-rel | install.sh, update.sh, uninstall.sh; macOS-en valódi LaunchAgenttel | CI, minden PR (Ubuntu: LaunchAgent nélkül, macOS: LaunchAgenttel) |
 | Telepítési / éles (ET) | Kézi ellenőrzőlista a Macen | launchd, OneDrive, valódi import, képgyűjtés lefedettsége | Telepítéskor és minden frissítéskor (Remote Control munkamenetben) |
 
 **Lefedettségi cél:** a `packages/shared` és a `packages/server` sorlefedettsége legalább 90%, a `packages/web` legalább 70%. A CI elbukik, ha ez alá esik.
@@ -202,6 +203,24 @@ Jelölés: azonosító · szint · leírás · elvárt eredmény. A story oszlop
 | T-UI-06 | E | 7.2 | Billentyűzetes bejárás: fő folyamatok egér nélkül (keresés, szűrés, jelölés, új kártya) | Elvégezhető, a fókusz mindig látható |
 | T-UI-07 | U | 7.2 | Minden felületi szöveg a `hu.ts`-ből jön | A komponensekben nincs beégetett felhasználói szöveg (ESLint szabály) |
 
+#### Telepítés és automatikus indítás (S-60, S-61; M7)
+
+| ID | Szint | Story | Eset | Elvárt eredmény |
+|---|---|---|---|---|
+| T-INS-01 | I | S-60 | `install.sh --yes --excel <fixture> --backup-dir <mappa>` | Import 43 kártya, a `config.json`-ban a `backupDir` |
+| T-INS-02 | I | S-60, K-01 | Ismételt `install.sh` | A kártyák száma nem változik, az import kimarad |
+| T-INS-03 | I | S-60/EF1 | Telepítés LaunchAgenttel (macOS) | A plist érvényes (`plutil -lint`), be van töltve, a health 30 mp-en belül ok, a próbamentés és a napló elkészül |
+| T-INS-04 | I | S-60 | Szerver indítása `GMS_LOG_DIR`-rel | `/api/health` ok, a `gms.log` létrejön |
+| T-INS-05 | I | S-61 | A futó LaunchAgent szerver | Csak `127.0.0.1:4747`-en hallgat (`lsof`), idegen `Host` fejléc: `403` |
+| T-INS-06 | I | S-60/EF2 | A szerverfolyamat `kill`-je | 30 mp-en belül új folyamat válaszol |
+| T-INS-07 | I | S-60 | `update.sh --no-pull --skip-build` | Helyi másolat (`gms.sqlite.pre-update-*`), a kártyák száma változatlan, a szerver fut |
+| T-INS-08 | I | S-60 | `uninstall.sh` | A szerver leáll, a plist törlődik, az adatbázis megmarad |
+| T-INS-10 | U | S-60 | LaunchAgent plist kitöltése | Címke, Node út, `main.js`, adat- és naplómappa; `RunAtLoad`, `KeepAlive`, `ThrottleInterval = 10`; XML-escape; relatív út hiba |
+| T-INS-11 | U | 9.1 | Naponta forgatott napló | Napváltáskor `gms-ÉÉÉÉ-HH-NN.log`, 14 napnál régebbi törlődik, indításkor a régi `gms.log` elforgatódik |
+| T-INS-12 | A | S-60 | `npm run health` | Futó szervernél összesítő (kártyák, képek, mentés, figyelmeztetések), nem futónál 1-es kód |
+| T-INS-13 | A | S-60 | `npm run ops -- config / card-count / snapshot / launch-agent` | A `config.json` többi mezője megmarad; helyes kártyaszám; online másolat; plist fájlba |
+| T-INS-14 | A | K-01 | `import --if-empty` nem üres adatbázison | 0-s kód, nincs változás |
+
 ### 4.10 Teljesítmény
 
 | ID | Szint | Eset | Elvárt eredmény |
@@ -240,6 +259,7 @@ GitHub Actions minden PR-en és a `main`-re kerüléskor:
 3. `npm run typecheck`
 4. `npm test` (egység, API, komponens; lefedettségi küszöbökkel)
 5. `npm run build`
+5a. `shellcheck -x scripts/*.sh` és `scripts/smoke-install.sh` (Ubuntu: `--no-launchd`; macOS: valódi LaunchAgenttel, T-INS-01…08)
 6. `npm run e2e` (Playwright, Chromium és WebKit, `--trace off`; hiba esetén a hibás teszt nyomkövetéssel újrafut)
 7. `npm run bench` (teljesítményküszöbök)
 
@@ -282,8 +302,8 @@ Futtatókörnyezet: `ubuntu-latest` minden lépésre, valamint `macos-latest` a 
 | S-53 | T-BAK-06, T-BAK-07 |
 | S-54 | T-BAK-08, ET-10 |
 | S-55 | T-BAK-09, ET-08 |
-| S-60 | ET-04, ET-05, ET-06, ET-11 |
-| S-61 | T-SEC-01…03, ET-07 |
+| S-60 | T-INS-01…14, ET-04, ET-05, ET-06, ET-11 |
+| S-61 | T-SEC-01…03, T-INS-05, ET-07 |
 | S-62 | T-UI-01…05, ET-12 |
 | S-63 | T-EXT-01, T-EXT-02 |
 | S-64 | T-FIN-01 |
