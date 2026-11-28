@@ -48,12 +48,18 @@ export async function runBackup(
 
     // 1. SQLite konzisztens másolat (futás közben is biztonságos).
     const tmp = path.join(dir, `.gms-${stamp}.tmp.sqlite`);
-    fs.rmSync(tmp, { force: true });
+    const removeTmp = () => {
+      for (const f of [tmp, `${tmp}-wal`, `${tmp}-shm`]) fs.rmSync(f, { force: true });
+    };
+    removeTmp();
     await db.backup(tmp);
-    const check = new Database(tmp, { readonly: true });
+    // A másolat a WAL módot is örökli; DELETE módra váltjuk, hogy ne maradjon mellette
+    // -wal / -shm fájl a OneDrive mappában.
+    const check = new Database(tmp);
     let integrity: string;
     let dbCards: number;
     try {
+      check.pragma('journal_mode = DELETE');
       integrity = check.pragma('integrity_check', { simple: true }) as string;
       dbCards = (check.prepare('SELECT COUNT(*) AS n FROM card').get() as { n: number }).n;
     } finally {
@@ -61,7 +67,7 @@ export async function runBackup(
     }
     const liveCards = (db.prepare('SELECT COUNT(*) AS n FROM card').get() as { n: number }).n;
     if (integrity !== 'ok' || dbCards !== liveCards) {
-      fs.rmSync(tmp, { force: true });
+      removeTmp();
       throw new Error(`A mentés ellenőrzése nem sikerült (integritás: ${integrity}).`);
     }
     fs.renameSync(tmp, path.join(dir, `gms-${stamp}.sqlite`));
