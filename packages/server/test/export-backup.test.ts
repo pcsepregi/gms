@@ -112,6 +112,8 @@ describe('mentés', () => {
     const dir = path.join(config.backupDir!, 'backups');
     expect(fs.existsSync(path.join(dir, 'gms-2026-11-27.sqlite'))).toBe(true);
     expect(fs.existsSync(path.join(dir, 'gms-2026-11-27.xlsx'))).toBe(true);
+    // Nem maradhat ideiglenes vagy -wal/-shm fájl a mentési mappában.
+    expect(fs.readdirSync(dir).sort()).toEqual(['gms-2026-11-27.sqlite', 'gms-2026-11-27.xlsx']);
     const status = backupStatus(db, config);
     expect(status).toMatchObject({ configured: true, lastStatus: 'ok', stale: false });
     expect(db.prepare('SELECT status FROM backup_log').all()).toEqual([{ status: 'ok' }]);
