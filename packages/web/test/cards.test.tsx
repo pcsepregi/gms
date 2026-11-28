@@ -230,6 +230,42 @@ describe('keresés és szűrés (S-12 … S-16)', () => {
     expect(screen.getByRole('button', { name: 'Szűrő törlése: Setkód: MS' })).toBeInTheDocument();
   });
 
+  it('egymásra ható szűrők: a lehetőségek a többi szűrőhöz igazodnak, a kiválasztott megmarad', async () => {
+    renderCards();
+    await waitFor(() => expect(shownCards()).toHaveLength(4));
+    const menuButton = (name: string) =>
+      screen.getByRole('button', { name: new RegExp(`^${name}\\d*$`, 'u') });
+    const options = (name: string) => {
+      fireEvent.click(menuButton(name));
+      const panel = screen.getByRole('group', { name });
+      const labels = within(panel)
+        .queryAllByRole('checkbox')
+        .map((c) => c.closest('label')!.textContent);
+      fireEvent.click(menuButton(name));
+      return labels;
+    };
+    // Nyelvre szűrve (német: 2. és 4. lap) csak a német lapokon szereplő setkódok maradnak.
+    fireEvent.click(menuButton('Nyelv'));
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Nyelv' })).getByRole('checkbox', {
+        name: /Német/u,
+      }),
+    );
+    fireEvent.click(menuButton('Nyelv'));
+    expect(options('Setkód')).toEqual(['ES – Első set1', 'MS – Második set1']);
+    expect(options('Pokémon')).toEqual(['Alfa2']);
+    // Német + MS setkód: egyetlen lap marad.
+    fireEvent.click(menuButton('Setkód'));
+    fireEvent.click(
+      within(screen.getByRole('group', { name: 'Setkód' })).getByRole('checkbox', { name: /MS/u }),
+    );
+    fireEvent.click(menuButton('Setkód'));
+    expect(options('Set')).toEqual(['Második set1']); // német + MS setkód → csak a Második set
+    expect(options('Nyomási változat')).toEqual(['Normal1']);
+    // A nyelv listája a setkódhoz igazodik: MS csak német; a kiválasztott német megmarad.
+    expect(options('Nyelv')).toEqual(['Német1']);
+  });
+
   it('T-FLT-04 (S-14): címkék; az x egyet töröl, az "Összes törlése" mindent', async () => {
     renderCards(
       '/kartyak?q=alfa&nyelv=DE,EN&allapot=hianyzik&finish=Reverse+Holo&pokemon=Alfa&set=Els%C5%91+set&kep=tartalek&rendezes=szam',
