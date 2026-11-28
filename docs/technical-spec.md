@@ -72,7 +72,9 @@ gms/
 │  ├─ install.sh              telepítés a Macre (függőségek, build, launchd)
 │  ├─ update.sh               frissítés (git pull, build, újraindítás)
 │  ├─ uninstall.sh
-│  └─ local.gms.plist.tmpl    launchd sablon
+│  ├─ lib.sh                  közös függvények a fenti szkripteknek
+│  ├─ smoke-install.sh        telepítési füstteszt a CI-hoz (T-INS-*)
+│  └─ local.gms.server.plist.tmpl  launchd sablon
 ├─ fixtures/                  szintetikus teszt Excel (NEM Pali valódi fájlja)
 └─ .github/workflows/ci.yml   lint, típusellenőrzés, tesztek PR-eken
 ```
@@ -362,6 +364,8 @@ LaunchAgent: `~/Library/LaunchAgents/local.gms.server.plist`
 
 - `RunAtLoad = true` (bejelentkezéskor indul), `KeepAlive = true` (leállás esetén a launchd újraindítja), `ThrottleInterval = 10`.
 - `ProgramArguments`: a Homebrew Node teljes útja + `packages/server/dist/main.js`.
+- `EnvironmentVariables`: `GMS_DATA_DIR` (adatmappa), `GMS_LOG_DIR` (a szerver ide írja a naponta forgatott naplót), `NODE_ENV=production`, és egy minimális `PATH` a Node mappájával.
+- A plistet a `scripts/local.gms.server.plist.tmpl` sablonból a `npm run ops -- launch-agent` tölti ki (XML-escape-pel), a telepítő `plutil -lint`-tel ellenőrzi.
 - A szerver a `127.0.0.1:4747` címen hallgat. Ha a port foglalt, a naplóba ír és kilép (a launchd 10 másodperc múlva újrapróbálja).
 - A böngésző könyvjelzője: `http://127.0.0.1:4747`. A telepítő Safari-könyvjelzőt nem állít, de a végén megnyitja az oldalt.
 

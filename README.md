@@ -8,6 +8,19 @@ Lechonk & Oinkologne Grand Master Set gyűjteménykezelő webapp (helyben fut, P
 - [Technikai specifikáció](docs/technical-spec.md)
 - [User storyk](docs/user-stories.md)
 - [Tesztspecifikáció](docs/test-spec.md)
+- [Telepítés a Macre](docs/install-mac.md)
+- [Üzemeltetés](docs/operations.md)
+
+## Telepítés a Macre
+
+```sh
+git clone https://github.com/pcsepregi/gms.git ~/Applications/gms
+~/Applications/gms/scripts/install.sh
+```
+
+A telepítő mindent elvégez (Node 22, build, import, OneDrive mentés, automatikus indítás
+LaunchAgenttel). Állapot: `npm run health`, frissítés: `scripts/update.sh`, eltávolítás:
+`scripts/uninstall.sh`. Részletek: [docs/install-mac.md](docs/install-mac.md).
 
 ## Fejlesztés
 

@@ -24,14 +24,18 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      - name: Shell szkriptek ellenőrzése (shellcheck)
+        run: shellcheck -x scripts/*.sh
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Telepítési füstteszt LaunchAgent nélkül (T-INS-01, 02, 04)
+        run: scripts/smoke-install.sh --no-launchd
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run e2e
 
   macos:
-    name: Tesztek és build (macOS)
+    name: Tesztek, build és telepítés LaunchAgenttel (macOS)
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,3 +47,5 @@ jobs:
       - run: npm run build -w @gms/shared
       - run: npm test
       - run: npm run build
+      - name: Telepítési füstteszt valódi LaunchAgenttel (T-INS-03, 05…08)
+        run: scripts/smoke-install.sh

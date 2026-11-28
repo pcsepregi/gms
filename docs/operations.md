@@ -1,6 +1,6 @@
 # Üzemeltetés
 
-Ez a dokumentum a gyűjteménykezelő futtatását, mentését és visszaállítását írja le. A telepítő és a frissítő script (`scripts/install.sh`, `scripts/update.sh`) és az automatikus indítás (LaunchAgent) a 7. mérföldkőben készül el; addig a szervert kézzel indítjuk.
+Ez a dokumentum a gyűjteménykezelő futtatását, mentését és visszaállítását írja le. Az első telepítés lépésről lépésre: [Telepítés Pali Macjére](install-mac.md).
 
 ## 1. Mappák és beállítások
 
@@ -10,6 +10,8 @@ Ez a dokumentum a gyűjteménykezelő futtatását, mentését és visszaállít
 | Adatbázis | `~/Library/Application Support/GMS/gms.sqlite` |
 | Képek | `~/Library/Application Support/GMS/images/` |
 | Beállítások | `~/Library/Application Support/GMS/config.json` |
+| Napló | `~/Library/Logs/GMS/gms.log` (naponta forgatva: `gms-ÉÉÉÉ-HH-NN.log`, 14 napig) |
+| LaunchAgent | `~/Library/LaunchAgents/local.gms.server.plist` |
 
 A `config.json` opcionális. A fontos mezői:
 
@@ -25,12 +27,32 @@ A `config.json` opcionális. A fontos mezői:
 
 A `GMS_DATA_DIR` környezeti változóval az adatmappa más helyre állítható (pl. teszteléshez).
 
-## 2. Indítás
+## 2. Indítás és automatikus futás
+
+A telepítés után (`scripts/install.sh`) a szervert a macOS **launchd** futtatja a `local.gms.server` LaunchAgenttel:
+
+- bejelentkezéskor elindul (`RunAtLoad`), leállás vagy összeomlás után 10 mp múlva újraindul (`KeepAlive`, `ThrottleInterval = 10`);
+- a Node a Homebrew `node@22` (vagy a telepítéskor talált 22-es Node), a program a `packages/server/dist/main.js`;
+- a napló a `~/Library/Logs/GMS/gms.log` fájlba megy (a LaunchAgent a `GMS_LOG_DIR` változóval adja meg). A naplóba nem kerülnek kártyamegjegyzések. Az indulás előtti hibák a `launchd.err.log`-ban vannak.
+
+Hasznos parancsok (a `~/Applications/gms` mappában):
+
+| Mit | Parancs |
+|---|---|
+| Állapot (fut-e, kártyák, képek, mentés) | `npm run health` |
+| Újraindítás | `launchctl kickstart -k gui/$(id -u)/local.gms.server` |
+| Leállítás (a következő bejelentkezésig) | `launchctl bootout gui/$(id -u)/local.gms.server` |
+| Újra betöltés leállítás után | `scripts/install.sh --skip-build --skip-import --no-open` |
+| Frissítés | `scripts/update.sh` |
+| Eltávolítás (az adatok megmaradnak) | `scripts/uninstall.sh` |
+| A LaunchAgent állapota | `launchctl print gui/$(id -u)/local.gms.server` |
+
+Kézi indítás fejlesztéshez vagy LaunchAgent nélkül:
 
 ```sh
 npm ci
 npm run build
-npm start          # node packages/server/dist/main.js
+npm start          # node packages/server/dist/main.js, napló a terminálba
 ```
 
 Ezután a böngészőben: `http://127.0.0.1:4747`. Ha a port foglalt, a szerver a naplóba írja és kilép.
@@ -50,7 +72,7 @@ Ezután a böngészőben: `http://127.0.0.1:4747`. Ha a port foglalt, a szerver 
 
 A visszaállítás a szerver leállított állapotában történik, a parancs ezt ellenőrzi.
 
-1. Állítsd le a szervert (Ctrl+C, vagy ha LaunchAgent futtatja, a `launchctl bootout` paranccsal).
+1. Állítsd le a szervert: `launchctl bootout gui/$(id -u)/local.gms.server` (kézi indításnál Ctrl+C).
 2. Futtasd a visszaállítást a kívánt napra:
 
    ```sh
@@ -60,7 +82,7 @@ A visszaállítás a szerver leállított állapotában történik, a parancs ez
    Vagy egy konkrét fájlból: `npm run restore -- --file /útvonal/gms-2026-11-27.sqlite`.
 
 3. A parancs a jelenlegi adatbázist `gms.sqlite.before-restore-<időbélyeg>` néven félreteszi, bemásolja a mentést, és visszaállítja a képeket (a napi mentés képtükréből). Így a visszaállítás is visszafordítható: a félretett fájlt vissza lehet nevezni.
-4. Indítsd újra a szervert, és ellenőrizd a Beállítások oldalon a kártyák számát.
+4. Indítsd újra a szervert (`scripts/install.sh --skip-build --skip-import --no-open`), és ellenőrizd a kártyák számát (`npm run health` vagy a Beállítások oldal).
 
 Ha a mentés régebbi adatbázis-verzióból származik, az indításkor a szerver migrálja (a migráció előtt másolatot készít).
 
@@ -71,7 +93,9 @@ Ha a mentés régebbi adatbázis-verzióból származik, az indításkor a szerv
 | Figyelmeztető sáv: "Az utolsó mentés hibás" | A Beállításokban a hiba szövege látszik. Leggyakrabban a OneDrive mappa nem érhető el, vagy a macOS nem adott jogosultságot. Ellenőrizd a `backupDir` útvonalat, és a "Mentés most" gombbal próbáld újra. |
 | Figyelmeztető sáv: "Régi az utolsó sikeres mentés" | 26 óránál régebben volt sikeres mentés. Általában a Mac volt kikapcsolva, vagy a szerver nem futott. A "Mentés most" gomb pótolja. |
 | A visszaállítás: "A szerver fut" | Előbb állítsd le a szervert, utána futtasd újra a parancsot. |
-| A szerver nem indul, "A szerver nem indult el" | A port foglalt, vagy a `config.json` hibás. A napló (`~/Library/Logs/GMS/gms.log`) pontos okot ír. |
+| A szerver nem indul, "A szerver nem indult el" | A port foglalt, vagy a `config.json` hibás. A napló (`~/Library/Logs/GMS/gms.log`, illetve `launchd.err.log`) pontos okot ír. |
+| `npm run health`: "A GMS nem válaszol" | `launchctl print gui/$(id -u)/local.gms.server`: ha nincs betöltve, `scripts/install.sh --skip-build --skip-import --no-open`; ha fut, de újra és újra kilép, a napló mondja meg az okát. |
+| A mentés jogosultsági hibával áll le (pl. `EPERM`, `Operation not permitted`) | A háttérben futó Node nem fér hozzá a OneDrive mappához. Rendszerbeállítások > Adatvédelem és biztonság > Teljes lemezhozzáférés: add hozzá a Node-ot (az útja: `launchctl print gui/$(id -u)/local.gms.server` → `program`), majd "Mentés most". |
 | Hiányzó képek a visszaállítás után | Csak napi mentésből állítunk vissza képeket. `--file` megadásakor a képek nem változnak. |
 
 ## 6. Biztonság és adatvédelem

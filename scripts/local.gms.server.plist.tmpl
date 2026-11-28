@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  GMS LaunchAgent sablon (technikai spec 9.2). Kézzel ne szerkeszd: a scripts/install.sh
+  és a scripts/update.sh tölti ki és másolja a ~/Library/LaunchAgents mappába.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>{{LABEL}}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>{{NODE}}</string>
+    <string>{{MAIN}}</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>{{APP_DIR}}</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>NODE_ENV</key>
+    <string>production</string>
+    <key>GMS_DATA_DIR</key>
+    <string>{{DATA_DIR}}</string>
+    <key>GMS_LOG_DIR</key>
+    <string>{{LOG_DIR}}</string>
+    <key>PATH</key>
+    <string>{{PATH}}</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>{{LOG_DIR}}/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>{{LOG_DIR}}/launchd.err.log</string>
+</dict>
+</plist>
