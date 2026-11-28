@@ -1,6 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import Fastify, { type FastifyInstance, type FastifyReply } from 'fastify';
+import Fastify, {
+  type FastifyInstance,
+  type FastifyReply,
+  type FastifyServerOptions,
+} from 'fastify';
 import fastifyStatic from '@fastify/static';
 import type { ApiErrorBody, Health, ImageStatusCounts } from '@gms/shared';
 import type { Config } from './config.js';
@@ -28,7 +32,8 @@ export interface AppOptions {
   version: string;
   /** A React build mappája; ha nem létezik, csak az API fut. */
   webDistDir?: string | null;
-  logger?: boolean;
+  /** `true`: naplózás a standard kimenetre; objektum: pl. `{ stream }` a naplófájlhoz. */
+  logger?: FastifyServerOptions['logger'];
   /** A képgyűjtő háttérsor; nélküle a kártyák `pending` állapotban várnak. */
   collector?: ImageCollector | null;
 }

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import type { FastifyInstance } from 'fastify';
-import { buildApp } from './app.js';
+import { buildApp, type AppOptions } from './app.js';
 import { loadConfig, type Config } from './config.js';
 import { needsBackup, runBackupExclusive } from './backup.js';
 import { openDatabase } from './database.js';
@@ -15,7 +15,7 @@ export function readVersion(): string {
 export async function startServer(
   config: Config = loadConfig(),
   opts: {
-    logger?: boolean;
+    logger?: AppOptions['logger'];
     webDistDir?: string | null;
     /** Egyedi képgyűjtő (tesztekhez); `false` kikapcsolja a háttérgyűjtést. */
     collector?: ImageCollector | false;
