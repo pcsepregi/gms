@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from './app.js';
 import { loadConfig, type Config } from './config.js';
+import { needsBackup, runBackupExclusive } from './backup.js';
 import { openDatabase } from './database.js';
 import { SERVER_PACKAGE_JSON } from './paths.js';
 
@@ -22,7 +23,19 @@ export async function startServer(
     logger: opts.logger ?? true,
     webDistDir: opts.webDistDir,
   });
-  app.addHook('onClose', async () => db.close());
+  // Napi mentés ütemezője (S-52): induláskor és óránként ellenőriz, ha kell, ment.
+  const tick = () => {
+    if (!config.backupDir || !needsBackup(db, new Date())) return;
+    runBackupExclusive(db, config).catch((err: Error) =>
+      app.log.error({ err: err.message }, 'napi mentés sikertelen'),
+    );
+  };
+  const timer = setInterval(tick, 60 * 60 * 1000);
+  timer.unref();
+  app.addHook('onClose', async () => {
+    clearInterval(timer);
+    db.close();
+  });
   if (migration.applied.length) {
     app.log.info({ migration }, 'adatbázis-migrációk lefutottak');
   }
@@ -32,5 +45,6 @@ export async function startServer(
     await app.close();
     throw err;
   }
+  setImmediate(tick);
   return app;
 }

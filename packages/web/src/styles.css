@@ -1356,3 +1356,25 @@ h3 {
     gap: calc(var(--space) * 3);
   }
 }
+
+/* Export és mentés (M6) */
+.export-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.export-buttons .muted {
+  flex-basis: 100%;
+}
+.backup-warning {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--accent, #b5652b);
+  background: var(--warn-bg, #f6e7d8);
+  color: var(--text, #1d1b19);
+  font-size: 0.9rem;
+}

@@ -16,6 +16,9 @@ import {
   updateFinish,
 } from './editing.js';
 import { WEB_DIST_DIR } from './paths.js';
+import { backupStatus, isBackupRunning, runBackupExclusive } from './backup.js';
+import { exportFileName, safeNamePart, toCsv, toXlsx, type ExportFormat } from './export.js';
+import type { Card } from '@gms/shared';
 
 export interface AppOptions {
   db: Db;
@@ -140,6 +143,81 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
   app.post('/api/languages', async (req, reply) =>
     reply.code(201).send(createLanguage(db, req.body ?? {})),
   );
+
+  // Export (S-50, S-51): ids nélkül a teljes gyűjtemény; ids esetén a megadott sorrendben.
+  const exportCards = async (
+    reply: FastifyReply,
+    format: string | undefined,
+    rawIds: string[] | undefined,
+    name: string | undefined,
+  ) => {
+    if (format !== 'xlsx' && format !== 'csv') {
+      return sendError(reply, 400, 'VALIDATION', 'A formátum xlsx vagy csv lehet.');
+    }
+    const all = listCards(db);
+    let cards: Card[] = all;
+    if (rawIds !== undefined) {
+      const byId = new Map(all.map((c) => [c.id, c]));
+      const ids = rawIds
+        .flatMap((v) => String(v).split(','))
+        .filter(Boolean)
+        .map(Number);
+      if (ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+        return sendError(reply, 400, 'VALIDATION', 'Hibás kártyaazonosító a listában.');
+      }
+      cards = ids.map((id) => byId.get(id)).filter((c): c is Card => c !== undefined);
+    }
+    const fmt = format as ExportFormat;
+    const fileName = exportFileName(fmt, cards === all ? null : safeNamePart(name));
+    const body = fmt === 'xlsx' ? await toXlsx(cards) : toCsv(cards);
+    const type =
+      fmt === 'xlsx'
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'text/csv; charset=utf-8';
+    return reply
+      .header('content-type', type)
+      .header('content-disposition', `attachment; filename="${fileName}"`)
+      .send(body);
+  };
+
+  app.get<{ Querystring: { format?: string; ids?: string; name?: string } }>(
+    '/api/export',
+    async (req, reply) =>
+      exportCards(
+        reply,
+        req.query.format,
+        req.query.ids === undefined ? undefined : [req.query.ids],
+        req.query.name,
+      ),
+  );
+
+  app.post<{ Body: { format?: string; ids?: number[]; name?: string } }>(
+    '/api/export',
+    async (req, reply) => {
+      const b = req.body ?? {};
+      const ids = Array.isArray(b.ids) ? b.ids.map(String) : undefined;
+      return exportCards(reply, b.format, ids, typeof b.name === 'string' ? b.name : undefined);
+    },
+  );
+
+  app.get('/api/backup/status', async () =>
+    backupStatus(db, config, new Date(), isBackupRunning()),
+  );
+
+  app.post('/api/backup/run', async (_req, reply) => {
+    if (isBackupRunning()) return sendError(reply, 409, 'BUSY', 'Már fut egy mentés.');
+    try {
+      const result = await runBackupExclusive(db, config);
+      return { ok: true, ...result, status: backupStatus(db, config) };
+    } catch (err) {
+      return sendError(
+        reply,
+        500,
+        'BACKUP_FAILED',
+        `A mentés nem sikerült: ${(err as Error).message}`,
+      );
+    }
+  });
 
   app.get('/api/import/summary', async (_req, reply) => {
     const summary = getImportSummary(db);

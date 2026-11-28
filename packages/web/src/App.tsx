@@ -1,5 +1,6 @@
 import { NavLink, Route, Routes } from 'react-router';
 import { useHealth } from './api/queries';
+import { useBackupStatus } from './api/backup';
 import { ToastProvider } from './components/Toasts';
 import { hu } from './i18n/hu';
 import { CardsPage } from './pages/CardsPage';
@@ -9,8 +10,18 @@ import { ThemeSwitch } from './theme';
 
 export function App() {
   const health = useHealth();
+  const backup = useBackupStatus();
+  const warn = backup.data?.configured && backup.data.stale;
   return (
     <ToastProvider>
+      {warn && (
+        <div className="backup-warning" role="alert">
+          <span>
+            {backup.data!.lastStatus === 'error' ? hu.backup.warningError : hu.backup.warningOld}
+          </span>
+          <NavLink to="/beallitasok">{hu.backup.details}</NavLink>
+        </div>
+      )}
       <header className="app-header">
         <span className="app-title">{health.data?.appTitle ?? hu.appTitle}</span>
         <nav>

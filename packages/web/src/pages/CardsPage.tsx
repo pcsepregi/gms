@@ -10,6 +10,7 @@ import {
   type SortKey,
 } from '@gms/shared';
 import { useCards } from '../api/queries';
+import { downloadExport } from '../lib/download';
 import { CardDetails } from '../components/CardDetails';
 import { CardForm } from '../components/CardForm';
 import { Panel } from '../components/Panel';
@@ -72,6 +73,35 @@ interface Chip {
   key: string;
   label: string;
   remove: Partial<CardQuery>;
+}
+
+/** A szűrőkből képzett fájlnév-részlet (S-51/EF2), pl. "hianylista-nemet". */
+function exportName(q: CardQuery): string {
+  const parts: string[] = [];
+  if (q.owned === 'missing') parts.push('hianylista');
+  if (q.owned === 'owned') parts.push('megvan');
+  if (q.languages.length === 1) parts.push(q.languages[0]!.toLowerCase());
+  if (q.pokemon.length === 1) parts.push(q.pokemon[0]!);
+  if (q.sets.length === 1) parts.push(q.sets[0]!);
+  return parts.join(' ') || 'lista';
+}
+
+function ExportMenu({ ids, name, disabled }: { ids: number[]; name: string; disabled: boolean }) {
+  const toast = useToast();
+  const run = (format: 'xlsx' | 'csv') =>
+    downloadExport({ format, ids, name }).catch(() =>
+      toast({ message: hu.cards.exportFailed, tone: 'error' }),
+    );
+  return (
+    <div className="export-buttons" role="group" aria-label={hu.cards.export}>
+      <button type="button" className="btn" disabled={disabled} onClick={() => run('xlsx')}>
+        {hu.cards.exportXlsx}
+      </button>
+      <button type="button" className="btn" disabled={disabled} onClick={() => run('csv')}>
+        {hu.cards.exportCsv}
+      </button>
+    </div>
+  );
 }
 
 function isTypingTarget(el: EventTarget | null): boolean {
@@ -183,6 +213,11 @@ export function CardsPage({ creating = false }: { creating?: boolean }) {
           {cardsQuery.data ? t.count(shown.length, missing) : ''}
         </p>
         <div className="toolbar-end">
+          <ExportMenu
+            ids={shown.map((c) => c.id)}
+            name={exportName(query)}
+            disabled={shown.length === 0}
+          />
           <Link className="btn btn-primary" to={`/kartyak/uj${linkSearch}`}>
             <PlusIcon />
             {t.newCard}
