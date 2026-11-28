@@ -20,8 +20,10 @@ const code = await runImportCli(['--file', fixture, '--data-dir', dataDir], {
 });
 if (code !== 0) process.exit(code);
 
+// Az E2E-ben nincs külső hálózat: a képgyűjtő ki van kapcsolva, a kártyák `pending`-ben maradnak.
 const app = await startServer(loadConfig({ dataDir, env: { GMS_PORT: port } }), {
   logger: false,
+  collector: false,
 });
 const stop = () => {
   void app.close().then(() => {

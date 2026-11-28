@@ -14,6 +14,7 @@ interface CardRow {
   image_file: string | null;
   image_status: ImageStatus;
   image_lang_id: number | null;
+  image_lang_name_hu: string | null;
   created_at: string;
   updated_at: string;
   finish_id: number;
@@ -28,13 +29,14 @@ interface CardRow {
 
 const CARD_SELECT = `
   SELECT c.id, c.display_id, c.owned, c.pokemon, c.set_name, c.set_code, c.card_number, c.note,
-         c.image_file, c.image_status, c.image_lang_id, c.created_at, c.updated_at,
+         c.image_file, c.image_status, c.image_lang_id, il.name_hu AS image_lang_name_hu, c.created_at, c.updated_at,
          f.id AS finish_id, f.name AS finish_name, f.description AS finish_description,
          l.id AS language_id, l.name AS language_name, l.name_hu AS language_name_hu,
          l.short_code AS language_short_code, l.sort_order AS language_sort_order
   FROM card c
   JOIN finish f ON f.id = c.finish_id
-  JOIN language l ON l.id = c.language_id`;
+  JOIN language l ON l.id = c.language_id
+  LEFT JOIN language il ON il.id = c.image_lang_id`;
 
 function toCard(r: CardRow): Card {
   return {
@@ -57,7 +59,11 @@ function toCard(r: CardRow): Card {
     image: {
       status: r.image_status,
       url: r.image_file ? `/api/images/${encodeURIComponent(r.image_file)}` : null,
+      thumbUrl: r.image_file
+        ? `/api/images/${encodeURIComponent(r.image_file.replace(/\.webp$/u, '-thumb.webp'))}`
+        : null,
       languageId: r.image_lang_id,
+      languageNameHu: r.image_lang_name_hu,
     },
     createdAt: r.created_at,
     updatedAt: r.updated_at,

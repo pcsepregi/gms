@@ -76,7 +76,13 @@ describe('Áttekintés oldal', () => {
   it('megvan / összes kártya', async () => {
     mockApi({
       '/api/health': { body: health },
-      '/api/cards': { body: [{ owned: true }, { owned: false }, { owned: true }] },
+      '/api/cards': {
+        body: [
+          { owned: true, image: { status: 'exact' } },
+          { owned: false, image: { status: 'none' } },
+          { owned: true, image: { status: 'exact' } },
+        ],
+      },
     });
     renderWithProviders(<App />, '/');
     expect(await screen.findByText('2 / 3 kártya megvan')).toBeInTheDocument();

@@ -1,7 +1,8 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import Fastify, { type FastifyInstance, type FastifyReply } from 'fastify';
 import fastifyStatic from '@fastify/static';
-import type { ApiErrorBody, Health } from '@gms/shared';
+import type { ApiErrorBody, Health, ImageStatusCounts } from '@gms/shared';
 import type { Config } from './config.js';
 import type { Db } from './db/open.js';
 import { z } from 'zod';
@@ -15,6 +16,7 @@ import {
   updateCard,
   updateFinish,
 } from './editing.js';
+import { IMAGE_FILE_RE, type ImageCollector } from './images/index.js';
 import { WEB_DIST_DIR } from './paths.js';
 import { backupStatus, isBackupRunning, runBackupExclusive } from './backup.js';
 import { exportFileName, safeNamePart, toCsv, toXlsx, type ExportFormat } from './export.js';
@@ -27,6 +29,8 @@ export interface AppOptions {
   /** A React build mappája; ha nem létezik, csak az API fut. */
   webDistDir?: string | null;
   logger?: boolean;
+  /** A képgyűjtő háttérsor; nélküle a kártyák `pending` állapotban várnak. */
+  collector?: ImageCollector | null;
 }
 
 export function sendError(
@@ -112,13 +116,16 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
 
   app.post('/api/cards', async (req, reply) => {
     const card = createCard(db, req.body ?? {});
+    opts.collector?.kick();
     return reply.code(201).send(card);
   });
 
   app.patch<{ Params: { id: string } }>('/api/cards/:id', async (req, reply) => {
     const id = idParam(req.params.id);
     if (id === null) return cardNotFound(reply);
-    return updateCard(db, config.imagesDir, id, req.body ?? {});
+    const card = updateCard(db, config.imagesDir, id, req.body ?? {});
+    if (card.image.status === 'pending') opts.collector?.kick();
+    return card;
   });
 
   app.delete<{ Params: { id: string } }>('/api/cards/:id', async (req, reply) => {
@@ -126,6 +133,50 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
     if (id === null) return cardNotFound(reply);
     deleteCard(db, config.imagesDir, id);
     return reply.code(204).send();
+  });
+
+  app.post<{ Params: { id: string } }>('/api/cards/:id/image/refresh', async (req, reply) => {
+    const id = idParam(req.params.id);
+    if (id === null) return cardNotFound(reply);
+    if (opts.collector) {
+      if (!opts.collector.requestRefresh(id)) return cardNotFound(reply);
+    } else {
+      db.prepare(`UPDATE card SET image_status = 'pending' WHERE id = ?`).run(id);
+    }
+    const card = getCard(db, id);
+    return card ?? cardNotFound(reply);
+  });
+
+  app.get('/api/images/status', async (): Promise<ImageStatusCounts> => {
+    const out: ImageStatusCounts = {
+      total: 0,
+      pending: 0,
+      exact: 0,
+      fallback: 0,
+      none: 0,
+      error: 0,
+    };
+    const rows = db
+      .prepare('SELECT image_status AS s, COUNT(*) AS n FROM card GROUP BY image_status')
+      .all() as { s: Exclude<keyof ImageStatusCounts, 'total'>; n: number }[];
+    for (const r of rows) {
+      out[r.s] = r.n;
+      out.total += r.n;
+    }
+    return out;
+  });
+
+  app.get<{ Params: { file: string } }>('/api/images/:file', async (req, reply) => {
+    const file = req.params.file;
+    if (!IMAGE_FILE_RE.test(file)) {
+      return sendError(reply, 400, 'BAD_FILE', 'Érvénytelen képfájlnév.');
+    }
+    const full = path.join(config.imagesDir, file);
+    if (!fs.existsSync(full)) return sendError(reply, 404, 'NOT_FOUND', 'A kép nem található.');
+    return reply
+      .header('cache-control', 'public, max-age=31536000, immutable')
+      .type('image/webp')
+      .send(fs.createReadStream(full));
   });
 
   app.get('/api/lookups', async () => getLookups(db));

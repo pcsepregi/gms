@@ -5,6 +5,7 @@ import type {
   Finish,
   FinishInput,
   Health,
+  ImageStatusCounts,
   ImportSummary,
   Language,
   LanguageInput,
@@ -19,8 +20,38 @@ export const LOOKUPS_KEY = ['lookups'] as const;
 export const useLookups = () =>
   useQuery({ queryKey: LOOKUPS_KEY, queryFn: () => getJson<Lookups>('/api/lookups') });
 
+/** Amíg van képre váró kártya, a lista 3 másodpercenként frissül (S-41/EF2). */
+const POLL_MS = 3000;
+
 export const useCards = () =>
-  useQuery({ queryKey: CARDS_KEY, queryFn: () => getJson<Card[]>('/api/cards') });
+  useQuery({
+    queryKey: CARDS_KEY,
+    queryFn: () => getJson<Card[]>('/api/cards'),
+    refetchInterval: (q) =>
+      q.state.data?.some((c) => c.image.status === 'pending') ? POLL_MS : false,
+  });
+
+export const IMAGE_STATUS_KEY = ['image-status'] as const;
+
+/** A képgyűjtés állapota (darabszámok), a Beállításokhoz. */
+export const useImageStatus = () =>
+  useQuery({
+    queryKey: IMAGE_STATUS_KEY,
+    queryFn: () => getJson<ImageStatusCounts>('/api/images/status'),
+    refetchInterval: (q) => ((q.state.data?.pending ?? 0) > 0 ? POLL_MS : false),
+  });
+
+/** Kép újrakeresése (S-43): a kártya `pending` lesz, a lista pollozása hozza az eredményt. */
+export function useRefreshImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => sendJson<Card>('POST', `/api/cards/${id}/image/refresh`, {}),
+    onSuccess: (card) => {
+      qc.setQueryData<Card[]>(CARDS_KEY, (list) => patchCard(list, card.id, () => card));
+      void qc.invalidateQueries({ queryKey: IMAGE_STATUS_KEY });
+    },
+  });
+}
 
 export const useHealth = () =>
   useQuery({ queryKey: ['health'], queryFn: () => getJson<Health>('/api/health') });
