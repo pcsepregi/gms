@@ -37,3 +37,18 @@ set-azonosítók), vagy a szűrővel (Kép: tartalék / nincs) az érintett lapo
   képét általában azonosan adják.
 - A kliens a kártyalistát 3 másodpercenként frissíti, amíg van `pending` kártya (a spec
   kártyánkénti lekérdezést ír, a teljes lista helyben ~5 ms alatt jön, így egyszerűbb).
+
+## Közvetlen keresés setkóddal (2026-11-28)
+
+A TCGdex-ben több lapnál (pl. a japán ex lapoknál) hiányzik a Pokémon országos sorszáma,
+ezért a sorszám szerinti lista nem adja vissza őket. A képkereső ezért először közvetlenül
+kéri le a lapot: `/{nyelv}/cards/{set}-{szám}`, ha a nyelvben van a setkóddal egyező
+azonosítójú set (kis-/nagybetűtől függetlenül, pl. `SV4A` → `SV4a`, vagy a `SET_MAP`
+szerint). Ha a lap megvan, de nincs képe, a tartalék nyelvek jönnek (angol, japán, …).
+
+Mire jó a TCGdex (2026-11-28-i felmérés a Macről): képek csak angol, európai, latin-amerikai
+és japán lapokhoz vannak. A hagyományos kínai, thai és indonéz lapok szerepelnek, de kép
+nélkül; a koreai és egyszerűsített kínai lapok egyáltalán nincsenek benne. Ezeknél a
+japán megfelelő képe jöhet tartalékként (azonos setkód és szám esetén, pl. SV1S, SV3, SV4a).
+
+Javítás után a kép nélküli lapok újrakeresése: `npm run ops -- images-retry`.

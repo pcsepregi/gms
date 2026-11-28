@@ -24,6 +24,7 @@ const USAGE = [
   '  npm run ops -- card-count [--data-dir <mappa>]',
   '  npm run ops -- snapshot --label <név> [--data-dir <mappa>]',
   '  npm run ops -- rename --file <átnevezések.json> [--apply] [--data-dir <mappa>]',
+  '  npm run ops -- images-retry [--data-dir <mappa>]',
 ].join('\n');
 
 /**
@@ -34,6 +35,8 @@ const USAGE = [
  * - `card-count`: a kártyák száma (a telepítő ebből dönti el, kell-e import).
  * - `snapshot`: helyi másolat az adatbázisról (frissítés előtt), futó szerver mellett is.
  * - `rename`: Pokémon-, setnév-, setkód-értékek átnevezése (alapból csak próbafuttatás).
+ * - `images-retry`: a kép nélküli (hibás és nem talált) kártyák újra sorba állítása; a futó
+ *   szerver képgyűjtője egy percen belül nekiáll (pl. a képkereső javítása után).
  */
 export async function runOpsCli(argv: string[], io: OpsIo): Promise<number> {
   const [command, ...rest] = argv;
@@ -166,6 +169,21 @@ export async function runOpsCli(argv: string[], io: OpsIo): Promise<number> {
             io.out(`Helyi másolat: ${target}`);
           }
           summarizeRenames(renameValues(db, spec, args.apply)).forEach((l) => io.out(l));
+        } finally {
+          db.close();
+        }
+        return 0;
+      }
+      case 'images-retry': {
+        const config = loadConfig({ dataDir: args['data-dir'], env: io.env });
+        const { db } = openDatabase(config);
+        try {
+          const res = db
+            .prepare(
+              `UPDATE card SET image_status = 'pending' WHERE image_status IN ('error', 'none')`,
+            )
+            .run();
+          io.out(`Újrakeresésre sorba állítva: ${res.changes} kártya.`);
         } finally {
           db.close();
         }

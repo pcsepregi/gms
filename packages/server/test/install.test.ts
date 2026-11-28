@@ -246,6 +246,24 @@ describe('T-INS-13 telepítő segédparancsok (npm run ops)', () => {
     expect(copies).toHaveLength(1);
   });
 
+  it('rename (próba és éles) és images-retry a parancssorból', async () => {
+    const dir = tempDir();
+    await runImportCli(['--file', fixture('sample-master.xlsx'), '--data-dir', dir], io().io);
+    const file = path.join(dir, 'renames.json');
+    fs.writeFileSync(file, JSON.stringify({ pokemon: { 'Oinkologne ex': 'Oinkologne' } }));
+    let t = io();
+    expect(await runOpsCli(['rename', '--file', file, '--data-dir', dir], t.io)).toBe(0);
+    expect(t.out[0]).toMatch(/^Próbafuttatás/u);
+    t = io();
+    expect(await runOpsCli(['rename', '--file', file, '--data-dir', dir, '--apply'], t.io)).toBe(0);
+    expect(t.out.join('\n')).toContain('Átnevezve: 1 kártya.');
+    expect(fs.readdirSync(dir).some((f) => f.startsWith('gms.sqlite.pre-rename-'))).toBe(true);
+    expect(await runOpsCli(['rename', '--data-dir', dir], io().io)).toBe(2);
+    t = io();
+    expect(await runOpsCli(['images-retry', '--data-dir', dir], t.io)).toBe(0);
+    expect(t.out[0]).toMatch(/^Újrakeresésre sorba állítva: \d+ kártya\.$/u);
+  });
+
   it('launch-agent: fájlba vagy a kimenetre írja a plistet', async () => {
     const dir = tempDir();
     const out = path.join(dir, 'LaunchAgents', 'local.gms.server.plist');
