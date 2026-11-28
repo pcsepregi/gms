@@ -22,6 +22,7 @@
     "start": "node packages/server/dist/main.js",
     "dev": "npm run dev -w @gms/server",
     "import": "node packages/server/dist/cli/import.js",
+    "restore": "node packages/server/dist/cli/restore-main.js",
     "fixtures": "tsx scripts/make-fixtures.ts"
   },
   "devDependencies": {

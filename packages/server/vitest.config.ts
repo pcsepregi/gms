@@ -12,7 +12,7 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.ts'],
       // A vékony belépési pontok (process.argv / process.exit) külön folyamatban futnak.
-      exclude: ['src/main.ts', 'src/cli/import.ts'],
+      exclude: ['src/main.ts', 'src/cli/import.ts', 'src/cli/restore-main.ts'],
       thresholds: { lines: 90 },
     },
   },
