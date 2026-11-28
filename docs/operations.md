@@ -103,3 +103,32 @@ Ha a mentés régebbi adatbázis-verzióból származik, az indításkor a szerv
 - A szerver csak a helyi gépről érhető el (127.0.0.1), más gépről nem.
 - A kártyák megjegyzései nem kerülnek a naplóba.
 - A OneDrive mappába a mentés a gyűjtemény teljes adatát másolja. A mappát ugyanúgy védd, mint a gyűjteményt.
+
+## Adatjavítás: értékek átnevezése (`ops rename`)
+
+Ha egy Pokémon-, setnév- vagy setkód-értéket a teljes gyűjteményben át kell nevezni
+(pl. egy külön Pokémonként felvett változat beolvasztása, vagy idegen írású setnevek
+angolra cserélése), egy JSON fájllal megadható:
+
+```json
+{
+  "decodeHtmlEntities": true,
+  "pokemon": { "Régi név": "Új név" },
+  "setName": { "Régi setnév": "Új setnév" },
+  "setCode": { "régi": "ÚJ" }
+}
+```
+
+```sh
+npm run ops -- rename --file scripts/renames/2026-11-28-renames.json          # próbafuttatás
+npm run ops -- rename --file scripts/renames/2026-11-28-renames.json --apply  # élesben
+```
+
+A próbafuttatás csak kiírja, mi változna. Az `--apply` előtte helyi másolatot készít
+(`gms.sqlite.pre-rename-…`), egy tranzakcióban ír, a képek és a „megvan” állapot
+megmaradnak, az azonosítók újraszámolódnak. Ha két kártya az átnevezés után egybeesne,
+semmi sem változik, és a parancs kiírja az ütköző kártyákat.
+
+- 2026-11-28: `scripts/renames/2026-11-28-renames.json`: az „Oinkologne ex” az Oinkologne-hoz
+  került, a hagyományos kínai és indonéz setnevek angolul, a kétnyelvű latin-amerikai
+  setnevekből az angol rész maradt, `sv3` → `SV3`.

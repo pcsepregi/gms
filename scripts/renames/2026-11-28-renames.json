@@ -1,0 +1,25 @@
+{
+  "decodeHtmlEntities": true,
+  "pokemon": {
+    "Oinkologne ex": "Oinkologne"
+  },
+  "setName": {
+    "朱ex": "Scarlet ex",
+    "黯焰支配者": "Ruler of the Black Flame",
+    "閃色寶藏ex": "Shiny Treasure ex",
+    "起始組合ex 呆火鱷&電龍 ex": "ex Starter Set Fuecoco & Ampharos ex",
+    "起始組合ex 新葉喵&路卡利歐ex": "ex Starter Set Sprigatito & Lucario ex",
+    "起始組合ex 潤水鴨&謎擬Q ex": "ex Starter Set Quaxly & Mimikyu ex",
+    "起始組合ex 比卡超&巴布土撥": "ex Starter Set Pikachu ex & Pawmot",
+    "ex初階牌組": "Tera Greedent ex Start Deck",
+    "雙ex初階牌組 Generations": "Generations Start Decks",
+    "Harta Berkilau ex": "Shiny Treasure ex",
+    "Deck Ringkas ex": "ex Compact Deck",
+    "Journey Together / Aventuras Compartidas": "Journey Together",
+    "Destined Rivals / Rivales Predestinados": "Destined Rivals",
+    "Kilau Hitam": "Ruler of the Black Flame"
+  },
+  "setCode": {
+    "sv3": "SV3"
+  }
+}

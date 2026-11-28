@@ -28,6 +28,8 @@ export function CardGrid({ cards, linkSearch, onToggle }: Props) {
               <span className="tile-name">{c.pokemon}</span>
               <span className="tile-set">{c.setName}</span>
               <span className="tile-meta">
+                {/* Ahogy a kártyára nyomtatva van: setkód, majd a kártyaszám. */}
+                {c.setCode && <span className="set-code">{c.setCode} </span>}
                 <span className="num">{c.cardNumber}</span>
                 <span aria-hidden="true"> · </span>
                 <span>{c.finish.name}</span>

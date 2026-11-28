@@ -65,6 +65,14 @@ export function matchesSearch(card: Card, tokens: readonly string[]): boolean {
 // Szűrők
 // ---------------------------------------------------------------------------
 
+/** Setkód-szűrőben a kód nélküli lapok értéke. */
+export const NO_SET_CODE = '-';
+
+/** A kártya setkódja a szűréshez (kód nélkül NO_SET_CODE). */
+export function setCodeKey(card: Pick<Card, 'setCode'>): string {
+  return card.setCode?.trim() || NO_SET_CODE;
+}
+
 export type OwnedFilter = 'all' | 'owned' | 'missing';
 export type ImageFilter = 'fallback' | 'none';
 export type SortKey = 'set' | 'number' | 'language' | 'pokemon' | 'updated';
@@ -76,6 +84,8 @@ export interface CardQuery {
   /** Nyelvek rövid kódja (pl. `DE`). */
   languages: string[];
   sets: string[];
+  /** Setkódok (pl. `SVI`); a kód nélküli lapokat a NO_SET_CODE érték jelöli. */
+  setCodes: string[];
   finishes: string[];
   owned: OwnedFilter;
   image: ImageFilter[];
@@ -88,6 +98,7 @@ export const DEFAULT_QUERY: CardQuery = {
   pokemon: [],
   languages: [],
   sets: [],
+  setCodes: [],
   finishes: [],
   owned: 'all',
   image: [],
@@ -102,6 +113,7 @@ export function hasActiveFilters(q: CardQuery): boolean {
     q.pokemon.length > 0 ||
     q.languages.length > 0 ||
     q.sets.length > 0 ||
+    q.setCodes.length > 0 ||
     q.finishes.length > 0 ||
     q.owned !== 'all' ||
     q.image.length > 0
@@ -117,6 +129,7 @@ export function filterCards(cards: readonly Card[], q: CardQuery): Card[] {
   const pokemon = q.pokemon.length ? new Set(q.pokemon) : null;
   const languages = q.languages.length ? new Set(q.languages) : null;
   const sets = q.sets.length ? new Set(q.sets) : null;
+  const setCodes = q.setCodes.length ? new Set(q.setCodes) : null;
   const finishes = q.finishes.length ? new Set(q.finishes) : null;
   const image = q.image.length ? new Set<string>(q.image) : null;
 
@@ -126,6 +139,7 @@ export function filterCards(cards: readonly Card[], q: CardQuery): Card[] {
       (!pokemon || pokemon.has(c.pokemon)) &&
       (!languages || languages.has(c.language.shortCode)) &&
       (!sets || sets.has(c.setName)) &&
+      (!setCodes || setCodes.has(setCodeKey(c))) &&
       (!finishes || finishes.has(c.finish.name)) &&
       (!image || image.has(c.image.status)) &&
       matchesSearch(c, tokens),
@@ -215,7 +229,7 @@ export function queryCards(cards: readonly Card[], q: CardQuery): Card[] {
 }
 
 // ---------------------------------------------------------------------------
-// URL (S-16): `/kartyak?q=…&nyelv=DE,FR&allapot=hianyzik&pokemon=…&set=…&finish=…`
+// URL (S-16): `/kartyak?q=…&nyelv=DE,FR&allapot=hianyzik&pokemon=…&set=…&setkod=SVI,PAF&finish=…`
 // ---------------------------------------------------------------------------
 
 const OWNED_PARAM: Record<OwnedFilter, string | null> = {
@@ -259,6 +273,7 @@ export function queryFromParams(params: URLSearchParams): CardQuery {
     pokemon: list(params, 'pokemon'),
     languages: list(params, 'nyelv', true).map((v) => v.toUpperCase()),
     sets: list(params, 'set'),
+    setCodes: list(params, 'setkod', true),
     finishes: list(params, 'finish'),
     owned: OWNED_FROM.get(params.get('allapot') ?? '') ?? 'all',
     image,
@@ -273,6 +288,7 @@ export function queryToParams(q: CardQuery): URLSearchParams {
   for (const v of q.pokemon) p.append('pokemon', v);
   if (q.languages.length) p.set('nyelv', q.languages.join(','));
   for (const v of q.sets) p.append('set', v);
+  if (q.setCodes.length) p.set('setkod', q.setCodes.join(','));
   for (const v of q.finishes) p.append('finish', v);
   const owned = OWNED_PARAM[q.owned];
   if (owned) p.set('allapot', owned);

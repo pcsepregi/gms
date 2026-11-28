@@ -8,6 +8,7 @@ import { cardCount } from '../import/run.js';
 import { renderLaunchAgent } from '../install/launchd.js';
 import { checkHealth, formatHealth, type HealthIo } from './health.js';
 import { setConfigValue } from './configure.js';
+import { renameValues, summarizeRenames } from '../renames.js';
 
 export interface OpsIo extends HealthIo {
   env?: NodeJS.ProcessEnv;
@@ -22,6 +23,7 @@ const USAGE = [
   '  npm run ops -- config --data-dir <mappa> --get <mező>',
   '  npm run ops -- card-count [--data-dir <mappa>]',
   '  npm run ops -- snapshot --label <név> [--data-dir <mappa>]',
+  '  npm run ops -- rename --file <átnevezések.json> [--apply] [--data-dir <mappa>]',
 ].join('\n');
 
 /**
@@ -31,6 +33,7 @@ const USAGE = [
  * - `config`: a config.json olvasása / egy mező beállítása.
  * - `card-count`: a kártyák száma (a telepítő ebből dönti el, kell-e import).
  * - `snapshot`: helyi másolat az adatbázisról (frissítés előtt), futó szerver mellett is.
+ * - `rename`: Pokémon-, setnév-, setkód-értékek átnevezése (alapból csak próbafuttatás).
  */
 export async function runOpsCli(argv: string[], io: OpsIo): Promise<number> {
   const [command, ...rest] = argv;
@@ -48,6 +51,8 @@ export async function runOpsCli(argv: string[], io: OpsIo): Promise<number> {
         'set-backup-dir': { type: 'string' },
         get: { type: 'string' },
         label: { type: 'string' },
+        file: { type: 'string' },
+        apply: { type: 'boolean', default: false },
         quiet: { type: 'boolean', short: 'q', default: false },
       },
     }).values;
@@ -143,6 +148,27 @@ export async function runOpsCli(argv: string[], io: OpsIo): Promise<number> {
           db.close();
         }
         io.out(`Helyi másolat: ${target}`);
+        return 0;
+      }
+      case 'rename': {
+        if (!args.file) {
+          io.err(`Hiányzik a --file.\n${USAGE}`);
+          return 2;
+        }
+        const spec: unknown = JSON.parse(fs.readFileSync(args.file, 'utf8'));
+        const config = loadConfig({ dataDir: args['data-dir'], env: io.env });
+        const { db } = openDatabase(config);
+        try {
+          if (args.apply) {
+            const stamp = new Date().toISOString().replace(/[:.]/gu, '-');
+            const target = `${config.dbPath}.pre-rename-${stamp}`;
+            await db.backup(target);
+            io.out(`Helyi másolat: ${target}`);
+          }
+          summarizeRenames(renameValues(db, spec, args.apply)).forEach((l) => io.out(l));
+        } finally {
+          db.close();
+        }
         return 0;
       }
       default:
