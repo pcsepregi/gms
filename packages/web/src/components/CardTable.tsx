@@ -14,10 +14,11 @@ interface Props {
   cards: Card[];
   linkSearch: string;
   onToggle: (card: Card) => void;
+  onToggleOnTheWay: (card: Card) => void;
 }
 
 /** Sűrű táblázatos nézet (S-11/EF2). */
-export function CardTable({ cards, linkSearch, onToggle }: Props) {
+export function CardTable({ cards, linkSearch, onToggle, onToggleOnTheWay }: Props) {
   return (
     <div className="table-wrap">
       <table className="table card-table" data-testid="card-table">
@@ -25,6 +26,9 @@ export function CardTable({ cards, linkSearch, onToggle }: Props) {
           <tr>
             <th scope="col" className="col-check">
               {t.columns.owned}
+            </th>
+            <th scope="col" className="col-check">
+              {t.columns.onTheWay}
             </th>
             <th scope="col" className="col-thumb">
               <span className="sr-only">{t.columns.image}</span>
@@ -49,6 +53,17 @@ export function CardTable({ cards, linkSearch, onToggle }: Props) {
                     `${c.pokemon} ${c.cardNumber} ${c.finish.name} ${c.language.shortCode}`,
                   )}
                   onChange={() => onToggle(c)}
+                />
+              </td>
+              <td className="col-check">
+                <input
+                  type="checkbox"
+                  checked={c.onTheWay}
+                  disabled={c.owned}
+                  aria-label={t.toggleOnTheWay(
+                    `${c.pokemon} ${c.cardNumber} ${c.finish.name} ${c.language.shortCode}`,
+                  )}
+                  onChange={() => onToggleOnTheWay(c)}
                 />
               </td>
               <td className="col-thumb">

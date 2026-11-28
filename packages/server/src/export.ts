@@ -4,6 +4,7 @@ import type { Card } from '@gms/shared';
 /** Export oszlopai, a technikai spec 10. és a S-50 szerint. */
 export const EXPORT_HEADERS = [
   'Megvan',
+  'Úton',
   'Pokémon',
   'Set',
   'Set kód',
@@ -20,6 +21,7 @@ export type ExportFormat = 'xlsx' | 'csv';
 export function exportRows(cards: readonly Card[]): string[][] {
   return cards.map((c) => [
     c.owned ? 'Igen' : 'Nem',
+    c.onTheWay ? 'Igen' : 'Nem',
     c.pokemon,
     c.setName,
     c.setCode ?? '',

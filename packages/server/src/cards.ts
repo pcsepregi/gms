@@ -15,6 +15,7 @@ interface CardRow {
   id: number;
   display_id: string;
   owned: number;
+  on_the_way: number;
   pokemon: string;
   set_name: string;
   set_code: string | null;
@@ -37,7 +38,7 @@ interface CardRow {
 }
 
 const CARD_SELECT = `
-  SELECT c.id, c.display_id, c.owned, c.pokemon, c.set_name, c.set_code, c.card_number, c.note,
+  SELECT c.id, c.display_id, c.owned, c.on_the_way, c.pokemon, c.set_name, c.set_code, c.card_number, c.note,
          c.image_file, c.image_status, c.image_lang_id, il.name_hu AS image_lang_name_hu, c.created_at, c.updated_at,
          f.id AS finish_id, f.name AS finish_name, f.description AS finish_description,
          l.id AS language_id, l.name AS language_name, l.name_hu AS language_name_hu,
@@ -52,6 +53,8 @@ function toCard(r: CardRow): Card {
     id: r.id,
     displayId: r.display_id,
     owned: r.owned === 1,
+    // Megvan lapnál nem lehet úton (a jelölés törlődik); védekezésként itt is.
+    onTheWay: r.owned === 0 && r.on_the_way === 1,
     pokemon: r.pokemon,
     setName: r.set_name,
     setCode: r.set_code,
@@ -160,9 +163,26 @@ export function getImportSummary(db: Db): ImportSummary | null {
 export function setOwned(db: Db, id: number, owned: boolean, now = new Date()): Card | null {
   const ts = now.toISOString();
   db.prepare(
-    `UPDATE card SET owned = @owned, owned_changed_at = @ts, updated_at = @ts
+    `UPDATE card SET owned = @owned, owned_changed_at = @ts, updated_at = @ts,
+            on_the_way = CASE WHEN @owned = 1 THEN 0 ELSE on_the_way END
      WHERE id = @id AND owned <> @owned`,
   ).run({ id, owned: owned ? 1 : 0, ts });
+  return getCard(db, id);
+}
+
+export class OnTheWayError extends Error {}
+
+/**
+ * "Úton" jelölés (megrendelve, még nem érkezett meg). Idempotens; megvan lapra nem állítható
+ * igazra (előbb az érkezést kell jelölni, azaz a "megvan" törli az "úton" jelölést).
+ */
+export function setOnTheWay(db: Db, id: number, onTheWay: boolean, now = new Date()): Card | null {
+  const card = getCard(db, id);
+  if (!card) return null;
+  if (onTheWay && card.owned) throw new OnTheWayError('A megvan jelölésű lap nem lehet úton.');
+  db.prepare(
+    `UPDATE card SET on_the_way = @v, updated_at = @ts WHERE id = @id AND on_the_way <> @v`,
+  ).run({ id, v: onTheWay ? 1 : 0, ts: now.toISOString() });
   return getCard(db, id);
 }
 

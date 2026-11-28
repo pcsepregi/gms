@@ -19,8 +19,13 @@ describe('migrációk (T-MIG-01, T-MIG-02)', () => {
     const file = path.join(tempDir(), 'gms.sqlite');
     const db = openDb(file);
     const r = migrate(db, MIGRATIONS_DIR);
-    expect(r).toMatchObject({ from: 0, to: 1, applied: ['001_init.sql'], backupFile: null });
-    expect(schemaVersion(db)).toBe(1);
+    expect(r).toMatchObject({
+      from: 0,
+      to: 2,
+      applied: ['001_init.sql', '002_on_the_way.sql'],
+      backupFile: null,
+    });
+    expect(schemaVersion(db)).toBe(2);
     const tables = (
       db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all() as {
         name: string;

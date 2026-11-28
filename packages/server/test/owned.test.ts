@@ -25,6 +25,64 @@ function row(db: ReturnType<typeof testDb>['db'], id: number) {
     .get(id) as { owned: number; owned_changed_at: string | null; updated_at: string };
 }
 
+const putWay = (id: number | string, body: unknown) => ({
+  method: 'PUT' as const,
+  url: `/api/cards/${id}/on-the-way`,
+  headers: LOCAL_HEADERS,
+  payload: body as object,
+});
+
+describe('úton jelölés: PUT /api/cards/:id/on-the-way', () => {
+  it('beállítja, idempotens, a statisztika és az export látja, a megvan törli', async () => {
+    const { app, db } = await setup();
+    // A 2. kártya hiányzik a fixture-ben.
+    const res = await app.inject(putWay(2, { onTheWay: true }));
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ id: 2, owned: false, onTheWay: true });
+    expect((await app.inject(putWay(2, { onTheWay: true }))).statusCode).toBe(200);
+
+    const stats = (await app.inject({ url: '/api/stats', headers: LOCAL_HEADERS })).json() as {
+      total: { owned: number; all: number; onTheWay: number };
+    };
+    expect(stats.total.onTheWay).toBe(1);
+    // A megvan/hiányzik szám nem változik.
+    expect(stats.total.all - stats.total.owned).toBeGreaterThan(0);
+
+    const csv = await app.inject({ url: '/api/export?format=csv', headers: LOCAL_HEADERS });
+    expect(csv.body).toContain('Nem;Igen;');
+
+    // Megérkezett: megvan, az úton jelölés törlődik.
+    const owned = await app.inject(put(2, { owned: true }));
+    expect(owned.json()).toMatchObject({ owned: true, onTheWay: false });
+    expect(
+      (db.prepare('SELECT on_the_way FROM card WHERE id = 2').get() as { on_the_way: number })
+        .on_the_way,
+    ).toBe(0);
+
+    // Megvan lap nem lehet úton.
+    const bad = await app.inject(putWay(2, { onTheWay: true }));
+    expect(bad.statusCode).toBe(400);
+    expect(bad.json()).toMatchObject({ error: { code: 'VALIDATION' } });
+  });
+
+  it('a szerkesztésből megvanra állított lap is elveszti az úton jelölést, egyébként megmarad', async () => {
+    const { app } = await setup();
+    await app.inject(putWay(2, { onTheWay: true }));
+    const patch = (payload: object) =>
+      app.inject({ method: 'PATCH', url: '/api/cards/2', headers: LOCAL_HEADERS, payload });
+    expect((await patch({ note: 'megjegyzés' })).json()).toMatchObject({ onTheWay: true });
+    expect((await patch({ owned: true })).json()).toMatchObject({ owned: true, onTheWay: false });
+  });
+
+  it('hibás törzs és ismeretlen kártya', async () => {
+    const { app } = await setup();
+    expect((await app.inject(putWay(2, { onTheWay: 'igen' }))).statusCode).toBe(400);
+    expect((await app.inject(putWay(2, {}))).statusCode).toBe(400);
+    expect((await app.inject(putWay(99999, { onTheWay: true }))).statusCode).toBe(404);
+    expect((await app.inject(putWay('x', { onTheWay: true }))).statusCode).toBe(404);
+  });
+});
+
 describe('jelölés: PUT /api/cards/:id/owned (S-20)', () => {
   it('S-20/EF2: átváltja és tartósan menti, a válasz a frissített kártya', async () => {
     const { app, db } = await setup();
@@ -106,7 +164,11 @@ describe('GET /api/stats (T-DSH-01, T-DSH-05)', () => {
     const res = await app.inject({ url: '/api/stats', headers: LOCAL_HEADERS });
     expect(res.statusCode).toBe(200);
     const stats = res.json() as import('@gms/shared').Stats;
-    expect(stats.total).toEqual({ owned: list.filter((c) => c.owned).length, all: list.length });
+    expect(stats.total).toEqual({
+      owned: list.filter((c) => c.owned).length,
+      all: list.length,
+      onTheWay: 0,
+    });
     expect(stats.byLanguage.reduce((n, x) => n + x.all, 0)).toBe(list.length);
     expect(stats.recent).toEqual([]);
 

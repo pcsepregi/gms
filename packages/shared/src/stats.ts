@@ -26,7 +26,7 @@ export interface ClosestGroup extends StatGroup {
 }
 
 export interface Stats {
-  total: { owned: number; all: number };
+  total: { owned: number; all: number; onTheWay: number };
   byLanguage: LanguageGroup[];
   byPokemon: StatGroup[];
   bySet: StatGroup[];
@@ -130,7 +130,11 @@ export function computeStats(
     .slice(0, RECENT_LIMIT);
 
   return {
-    total: { owned: cards.filter((c) => c.owned).length, all: cards.length },
+    total: {
+      owned: cards.filter((c) => c.owned).length,
+      all: cards.length,
+      onTheWay: cards.filter((c) => c.onTheWay).length,
+    },
     byLanguage,
     byPokemon,
     bySet,

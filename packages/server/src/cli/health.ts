@@ -16,7 +16,7 @@ export interface HealthOptions {
 
 export interface HealthReport {
   health: Health;
-  stats: Stats['total'] | null;
+  stats: (Pick<Stats['total'], 'all' | 'owned'> & { onTheWay?: number }) | null;
   images: ImageStatusCounts | null;
   backup: BackupStatus | null;
 }
@@ -62,7 +62,7 @@ export function formatHealth(r: HealthReport, port: number): { lines: string[]; 
   let warnings = 0;
   if (r.stats) {
     lines.push(
-      `Kártyák: ${r.stats.all} (megvan: ${r.stats.owned}, hiányzik: ${r.stats.all - r.stats.owned})`,
+      `Kártyák: ${r.stats.all} (megvan: ${r.stats.owned}, hiányzik: ${r.stats.all - r.stats.owned}${r.stats.onTheWay ? `, ebből úton: ${r.stats.onTheWay}` : ''})`,
     );
     if (r.stats.all === 0) {
       lines.push('FIGYELEM: az adatbázis üres, még nem volt import.');

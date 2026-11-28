@@ -220,7 +220,8 @@ export function updateCard(
       `UPDATE card SET owned = @owned, pokemon = @pokemon, set_name = @setName, set_code = @setCode,
               card_number = @cardNumber, finish_id = @finishId, language_id = @languageId,
               note = @note, natural_key = @key, updated_at = @ts,
-              owned_changed_at = CASE WHEN owned <> @owned THEN @ts ELSE owned_changed_at END
+              owned_changed_at = CASE WHEN owned <> @owned THEN @ts ELSE owned_changed_at END,
+              on_the_way = CASE WHEN @owned = 1 THEN 0 ELSE on_the_way END
        WHERE id = @id`,
     ).run({ ...after, owned: after.owned ? 1 : 0, key, ts, id });
     if (imageChanged) {

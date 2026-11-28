@@ -10,7 +10,16 @@ import type { ApiErrorBody, Health, ImageStatusCounts } from '@gms/shared';
 import type { Config } from './config.js';
 import type { Db } from './db/open.js';
 import { z } from 'zod';
-import { getCard, getImportSummary, getLookups, getStats, listCards, setOwned } from './cards.js';
+import {
+  OnTheWayError,
+  getCard,
+  getImportSummary,
+  getLookups,
+  getStats,
+  listCards,
+  setOnTheWay,
+  setOwned,
+} from './cards.js';
 import {
   createCard,
   createFinish,
@@ -62,6 +71,7 @@ export function sendError(
 }
 
 const ownedBodySchema = z.object({ owned: z.boolean() }).strict();
+const onTheWayBodySchema = z.object({ onTheWay: z.boolean() }).strict();
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -121,6 +131,27 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
     const card = Number.isInteger(id) && id > 0 ? setOwned(db, id, body.data.owned) : null;
     if (!card) return sendError(reply, 404, 'NOT_FOUND', 'A kártya nem található.');
     return card;
+  });
+
+  app.put<{ Params: { id: string } }>('/api/cards/:id/on-the-way', async (req, reply) => {
+    const id = Number(req.params.id);
+    const body = onTheWayBodySchema.safeParse(req.body);
+    if (!body.success) {
+      return sendError(
+        reply,
+        400,
+        'VALIDATION',
+        'Hibás kérés: az "onTheWay" mező igaz/hamis legyen.',
+      );
+    }
+    try {
+      const card = Number.isInteger(id) && id > 0 ? setOnTheWay(db, id, body.data.onTheWay) : null;
+      if (!card) return sendError(reply, 404, 'NOT_FOUND', 'A kártya nem található.');
+      return card;
+    } catch (err) {
+      if (err instanceof OnTheWayError) return sendError(reply, 400, 'VALIDATION', err.message);
+      throw err;
+    }
   });
 
   /** Pozitív egész azonosító az útvonalból; ha nem az, `null` (→ 404). */

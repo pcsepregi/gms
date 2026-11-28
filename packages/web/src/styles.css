@@ -18,6 +18,8 @@
   --accent-soft: #f4e5da;
   --danger: #a3302b;
   /* Dashboard diagramszínek (Pokémononként), ellenőrizve színtévesztésre is. */
+  /* "Úton" (megrendelve) jelzés: kék, jól elkülönül a megvan (barna) és a hiányzik (szürke) állapottól. */
+  --way: #2d6db0;
   --series-1: #a3542b;
   --series-2: #2d6db0;
   --series-3: #c0981a;
@@ -52,6 +54,7 @@
     --on-accent: #1b1410;
     --accent-soft: #3b2a1f;
     --danger: #f08a80;
+    --way: #5f98dc;
     --series-1: #b85c34;
     --series-2: #5f98dc;
     --series-3: #b59e28;
@@ -76,6 +79,7 @@
   --on-accent: #1b1410;
   --accent-soft: #3b2a1f;
   --danger: #f08a80;
+  --way: #5f98dc;
   --series-1: #b85c34;
   --series-2: #5f98dc;
   --series-3: #b59e28;
@@ -740,6 +744,11 @@ h3 {
   color: var(--bg);
 }
 
+.tile[data-on-the-way='true'] .tile-missing {
+  background: var(--way);
+  color: var(--on-accent);
+}
+
 .tile-body {
   display: flex;
   flex-direction: column;
@@ -807,6 +816,17 @@ h3 {
 .own-toggle[aria-pressed='true'] .own-box {
   border-color: var(--accent);
   background: var(--accent);
+  color: var(--on-accent);
+}
+
+.way-toggle {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.way-toggle[aria-pressed='true'] .own-box {
+  border-color: var(--way);
+  background: var(--way);
   color: var(--on-accent);
 }
 

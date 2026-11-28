@@ -105,25 +105,27 @@ function patchCard(list: Card[] | undefined, id: number, fn: (c: Card) => Card) 
 }
 
 /**
- * Megvan / nincs meg jelölés optimista frissítéssel (S-20, technikai spec 8.3):
- * a lista azonnal átvált, hiba esetén az adott kártya visszaáll.
+ * Egy kártya optimista módosítása; a hiba esetén a régi állapot áll vissza.
+ * A "megvan" jelölés az "úton" jelölést is törli (a szerverrel egyezően).
  */
-export function useSetOwned(handlers: {
-  onSuccess?: (card: Card, vars: SetOwnedVars) => void;
-  onError?: (vars: SetOwnedVars) => void;
-}) {
+function useOptimisticCardMutation<V extends { id: number }>(
+  mutationFn: (vars: V) => Promise<Card>,
+  apply: (card: Card, vars: V) => Card,
+  handlers: { onSuccess?: (card: Card, vars: V) => void; onError?: (vars: V) => void },
+) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, owned }: SetOwnedVars) =>
-      sendJson<Card>('PUT', `/api/cards/${id}/owned`, { owned }),
-    onMutate: async ({ id, owned }) => {
+    mutationFn,
+    onMutate: async (vars: V) => {
       await qc.cancelQueries({ queryKey: CARDS_KEY });
-      qc.setQueryData<Card[]>(CARDS_KEY, (list) => patchCard(list, id, (c) => ({ ...c, owned })));
+      const previous = qc.getQueryData<Card[]>(CARDS_KEY)?.find((c) => c.id === vars.id);
+      qc.setQueryData<Card[]>(CARDS_KEY, (list) => patchCard(list, vars.id, (c) => apply(c, vars)));
+      return { previous };
     },
-    onError: (_err, vars) => {
-      qc.setQueryData<Card[]>(CARDS_KEY, (list) =>
-        patchCard(list, vars.id, (c) => ({ ...c, owned: !vars.owned })),
-      );
+    onError: (_err, vars, ctx) => {
+      const previous = ctx?.previous;
+      if (previous)
+        qc.setQueryData<Card[]>(CARDS_KEY, (list) => patchCard(list, vars.id, () => previous));
       handlers.onError?.(vars);
     },
     onSuccess: (card, vars) => {
@@ -131,6 +133,38 @@ export function useSetOwned(handlers: {
       handlers.onSuccess?.(card, vars);
     },
   });
+}
+
+/**
+ * Megvan / nincs meg jelölés optimista frissítéssel (S-20, technikai spec 8.3):
+ * a lista azonnal átvált, hiba esetén az adott kártya visszaáll.
+ */
+export function useSetOwned(handlers: {
+  onSuccess?: (card: Card, vars: SetOwnedVars) => void;
+  onError?: (vars: SetOwnedVars) => void;
+}) {
+  return useOptimisticCardMutation<SetOwnedVars>(
+    ({ id, owned }) => sendJson<Card>('PUT', `/api/cards/${id}/owned`, { owned }),
+    (c, { owned }) => ({ ...c, owned, onTheWay: owned ? false : c.onTheWay }),
+    handlers,
+  );
+}
+
+interface SetOnTheWayVars {
+  id: number;
+  onTheWay: boolean;
+}
+
+/** "Úton" (megrendelve) jelölés ugyanígy, optimista frissítéssel. */
+export function useSetOnTheWay(handlers: {
+  onSuccess?: (card: Card, vars: SetOnTheWayVars) => void;
+  onError?: (vars: SetOnTheWayVars) => void;
+}) {
+  return useOptimisticCardMutation<SetOnTheWayVars>(
+    ({ id, onTheWay }) => sendJson<Card>('PUT', `/api/cards/${id}/on-the-way`, { onTheWay }),
+    (c, { onTheWay }) => ({ ...c, onTheWay }),
+    handlers,
+  );
 }
 
 /** A kártyák és a javaslatok frissítése egy módosítás után (a azonosítók is változhatnak). */
