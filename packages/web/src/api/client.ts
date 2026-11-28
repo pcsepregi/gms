@@ -44,6 +44,17 @@ export async function sendJson<T>(method: 'POST' | 'PUT' | 'PATCH', url: string,
   );
 }
 
+/** Bináris törzs (pl. feltöltött kép) a fájl saját típusával. */
+export async function sendFile<T>(method: 'PUT' | 'POST', url: string, file: Blob) {
+  return parse<T>(
+    await fetch(url, {
+      method,
+      headers: { accept: 'application/json', 'content-type': file.type || 'image/png' },
+      body: file,
+    }),
+  );
+}
+
 export async function deleteJson(url: string): Promise<void> {
   return parse<void>(
     await fetch(url, { method: 'DELETE', headers: { accept: 'application/json' } }),

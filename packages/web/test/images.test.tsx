@@ -93,6 +93,59 @@ describe('részletek és beállítások (S-43, S-40/EF4)', () => {
     expect(within(panel).getByTestId('image-result')).toHaveTextContent('folyamatban');
   });
 
+  it('saját kép: link mentése, hibaüzenet, fájl feltöltése', async () => {
+    const none = card(1, { status: 'none' });
+    const saved = {
+      ...none,
+      image: { ...none.image, status: 'exact' as const, url: '/api/images/1-abcdef12.webp' },
+    };
+    let calls = 0;
+    const fetchMock = mockApi({
+      '/api/health': { body: health },
+      '/api/cards': { body: [none] },
+      '/api/cards/1': { body: none },
+      'PUT /api/cards/1/image': () =>
+        ++calls === 1
+          ? {
+              status: 400,
+              body: {
+                error: { code: 'DOWNLOAD', message: 'A kép nem tölthető le erről a linkről.' },
+              },
+            }
+          : { body: saved },
+      '/api/images/status': {
+        body: { total: 1, pending: 0, exact: 0, fallback: 0, none: 1, error: 0 },
+      },
+    });
+    renderWithProviders(<App />, '/kartyak/1');
+    const panel = await screen.findByTestId('card-details');
+    fireEvent.click(await within(panel).findByRole('button', { name: 'Saját kép megadása' }));
+    const field = within(panel).getByRole('textbox', { name: 'Képlink' });
+    const save = within(panel).getByRole('button', { name: 'Link mentése' });
+    expect(save).toBeDisabled();
+    fireEvent.change(field, { target: { value: 'https://example.org/x.png' } });
+    fireEvent.click(save);
+    expect(await within(panel).findByRole('alert')).toHaveTextContent('nem tölthető le');
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/cards/1/image',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ url: 'https://example.org/x.png' }),
+      }),
+    );
+
+    const file = new File([new Uint8Array([1, 2, 3])], 'k.png', { type: 'image/png' });
+    fireEvent.change(within(panel).getByLabelText('Kép feltöltése…', { selector: 'input' }), {
+      target: { files: [file] },
+    });
+    await waitFor(() =>
+      expect(within(panel).queryByRole('textbox', { name: 'Képlink' })).not.toBeInTheDocument(),
+    );
+    const last = fetchMock.mock.calls.at(-1)!;
+    expect((last[1] as RequestInit).body).toBe(file);
+    expect((last[1] as RequestInit).headers).toMatchObject({ 'content-type': 'image/png' });
+  });
+
   it('S-40/EF4: a Beállítások a képállapot darabszámait mutatja', async () => {
     mockApi({
       '/api/health': { body: health },

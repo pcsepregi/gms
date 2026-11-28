@@ -21,6 +21,14 @@ import {
   updateFinish,
 } from './editing.js';
 import { IMAGE_FILE_RE, type ImageCollector } from './images/index.js';
+import { createHttp, type Http } from './images/http.js';
+import {
+  MANUAL_UPLOAD_SOURCE,
+  MAX_MANUAL_BYTES,
+  ManualImageError,
+  parseImageUrl,
+  setManualImage,
+} from './images/manual.js';
 import { WEB_DIST_DIR } from './paths.js';
 import { backupStatus, isBackupRunning, runBackupExclusive } from './backup.js';
 import { exportFileName, safeNamePart, toCsv, toXlsx, type ExportFormat } from './export.js';
@@ -36,6 +44,8 @@ export interface AppOptions {
   logger?: FastifyServerOptions['logger'];
   /** A képgyűjtő háttérsor; nélküle a kártyák `pending` állapotban várnak. */
   collector?: ImageCollector | null;
+  /** HTTP-kliens a kézi képlinkek letöltéséhez (tesztben cserélhető). */
+  imageHttp?: Http;
 }
 
 export function sendError(
@@ -152,6 +162,45 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
     }
     const card = getCard(db, id);
     return card ?? cardNotFound(reply);
+  });
+
+  // Kézi kép: a törzs maga a képfájl (image/*), vagy JSON { url } képlink.
+  app.addContentTypeParser(
+    /^image\/[\w.+-]+$/u,
+    { parseAs: 'buffer', bodyLimit: MAX_MANUAL_BYTES },
+    (_req, body, done) => done(null, body),
+  );
+  let imageHttp = opts.imageHttp;
+  app.put<{ Params: { id: string } }>('/api/cards/:id/image', async (req, reply) => {
+    const id = idParam(req.params.id);
+    if (id === null) return cardNotFound(reply);
+    try {
+      let bytes: Buffer | null;
+      let source = MANUAL_UPLOAD_SOURCE;
+      if (Buffer.isBuffer(req.body)) {
+        bytes = req.body;
+      } else {
+        source = parseImageUrl((req.body as { url?: unknown } | null)?.url);
+        imageHttp ??= createHttp({ delayMs: 0 });
+        try {
+          bytes = await imageHttp.bytes(source);
+        } catch {
+          bytes = null;
+        }
+        if (!bytes) {
+          throw new ManualImageError(400, 'DOWNLOAD', 'A kép nem tölthető le erről a linkről.');
+        }
+      }
+      if (!(await setManualImage(db, config.imagesDir, id, bytes, source))) {
+        return cardNotFound(reply);
+      }
+    } catch (err) {
+      if (err instanceof ManualImageError) {
+        return sendError(reply, err.status, err.code, err.message);
+      }
+      throw err;
+    }
+    return getCard(db, id) ?? cardNotFound(reply);
   });
 
   app.get('/api/images/status', async (): Promise<ImageStatusCounts> => {
