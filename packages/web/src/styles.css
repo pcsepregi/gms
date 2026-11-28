@@ -1410,3 +1410,204 @@ h3 {
 .image-state p {
   margin: 0;
 }
+
+/* ---- Dashboard (technikai spec 8.2): egyszínű sávok, nincs színátmenet --- */
+
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: calc(var(--space) * 6);
+  padding: calc(var(--space) * 6);
+  margin-bottom: calc(var(--space) * 4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.hero p {
+  margin: 0;
+}
+
+.hero-label {
+  color: var(--muted);
+}
+
+.hero-figure {
+  font-size: 64px;
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.hero-all {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.hero-sub {
+  margin-top: calc(var(--space) * 1.5) !important;
+}
+
+.hero-side {
+  flex: 1 1 260px;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--space) * 2);
+}
+
+.hero-percent {
+  font-size: 32px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.hero-side .bar {
+  height: 10px;
+}
+
+.bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--space) * 4);
+}
+
+.dash-card {
+  padding: calc(var(--space) * 5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.dash-card h2 {
+  margin: 0 0 calc(var(--space) * 3);
+  font-size: 15px;
+}
+
+.dash-card > p {
+  margin-top: 0;
+}
+
+.dash-wide {
+  grid-column: 1 / -1;
+}
+
+.bar-list,
+.closest-list,
+.recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+#dash-lang + .bar-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: calc(var(--space) * 8);
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 44px;
+  align-items: baseline;
+  column-gap: calc(var(--space) * 3);
+  row-gap: calc(var(--space) * 1);
+  padding: calc(var(--space) * 2) calc(var(--space) * 1.5);
+  margin: 0 calc(var(--space) * -1.5);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.bar-row:hover {
+  background: var(--surface-2);
+}
+
+.bar-row .bar {
+  grid-column: 1 / -1;
+}
+
+.bar-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar-count {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.bar-percent {
+  text-align: right;
+  font-size: 13px;
+}
+
+.dash-card > .btn {
+  margin-top: calc(var(--space) * 3);
+}
+
+.closest-item {
+  display: flex;
+  justify-content: space-between;
+  gap: calc(var(--space) * 3);
+  padding: calc(var(--space) * 2.5) calc(var(--space) * 3);
+  margin-bottom: calc(var(--space) * 1.5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.closest-item:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.recent-list {
+  display: flex;
+  gap: calc(var(--space) * 3);
+  overflow-x: auto;
+  padding-bottom: calc(var(--space) * 1);
+}
+
+.recent-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--space) * 1);
+  width: 96px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.recent-item:hover {
+  color: var(--text);
+}
+
+@media (max-width: 720px) {
+  .dash-grid,
+  #dash-lang + .bar-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero-figure {
+    font-size: 48px;
+  }
+}

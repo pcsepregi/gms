@@ -6,7 +6,7 @@ import type { ApiErrorBody, Health, ImageStatusCounts } from '@gms/shared';
 import type { Config } from './config.js';
 import type { Db } from './db/open.js';
 import { z } from 'zod';
-import { getCard, getImportSummary, getLookups, listCards, setOwned } from './cards.js';
+import { getCard, getImportSummary, getLookups, getStats, listCards, setOwned } from './cards.js';
 import {
   createCard,
   createFinish,
@@ -87,6 +87,8 @@ export async function buildApp(opts: AppOptions): Promise<FastifyInstance> {
   });
 
   app.get('/api/cards', async () => listCards(db));
+
+  app.get('/api/stats', async () => getStats(db));
 
   app.get<{ Params: { id: string } }>('/api/cards/:id', async (req, reply) => {
     const id = Number(req.params.id);

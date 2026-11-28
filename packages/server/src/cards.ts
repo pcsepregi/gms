@@ -1,4 +1,13 @@
-import type { Card, Finish, ImageStatus, ImportSummary, Language, Lookups } from '@gms/shared';
+import { computeStats } from '@gms/shared';
+import type {
+  Card,
+  Finish,
+  ImageStatus,
+  ImportSummary,
+  Language,
+  Lookups,
+  Stats,
+} from '@gms/shared';
 import type { Db } from './db/open.js';
 import { getMeta } from './db/meta.js';
 
@@ -155,4 +164,18 @@ export function setOwned(db: Db, id: number, owned: boolean, now = new Date()): 
      WHERE id = @id AND owned <> @owned`,
   ).run({ id, owned: owned ? 1 : 0, ts });
   return getCard(db, id);
+}
+
+/** Dashboard statisztikák (S-30…S-33); az importált lapoknak nincs `owned_changed_at`-juk. */
+export function getStats(db: Db): Stats {
+  const changed = new Map(
+    (
+      db
+        .prepare(
+          'SELECT id, owned_changed_at FROM card WHERE owned = 1 AND owned_changed_at IS NOT NULL',
+        )
+        .all() as { id: number; owned_changed_at: string }[]
+    ).map((r) => [r.id, r.owned_changed_at]),
+  );
+  return computeStats(listCards(db), changed);
 }

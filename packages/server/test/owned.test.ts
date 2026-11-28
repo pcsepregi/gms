@@ -98,3 +98,25 @@ describe('jelölés: PUT /api/cards/:id/owned (S-20)', () => {
     expect(row(db, 2).owned).toBe(0);
   });
 });
+
+describe('GET /api/stats (T-DSH-01, T-DSH-05)', () => {
+  it('a szűretlen lista számaival egyezik, az importált lapok nincsenek a legutóbbiak között', async () => {
+    const { app, db } = await setup();
+    const list = (await app.inject({ url: '/api/cards', headers: LOCAL_HEADERS })).json() as Card[];
+    const res = await app.inject({ url: '/api/stats', headers: LOCAL_HEADERS });
+    expect(res.statusCode).toBe(200);
+    const stats = res.json() as import('@gms/shared').Stats;
+    expect(stats.total).toEqual({ owned: list.filter((c) => c.owned).length, all: list.length });
+    expect(stats.byLanguage.reduce((n, x) => n + x.all, 0)).toBe(list.length);
+    expect(stats.recent).toEqual([]);
+
+    const [a, b] = list.filter((c) => !c.owned).map((c) => c.id);
+    setOwned(db, a!, true, new Date('2026-03-01T10:00:00Z'));
+    setOwned(db, b!, true, new Date('2026-03-02T10:00:00Z'));
+    const after = (
+      await app.inject({ url: '/api/stats', headers: LOCAL_HEADERS })
+    ).json() as import('@gms/shared').Stats;
+    expect(after.total.owned).toBe(stats.total.owned + 2);
+    expect(after.recent.map((c) => c.id)).toEqual([b, a]);
+  });
+});
