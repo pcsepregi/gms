@@ -42,9 +42,9 @@ describe('export formátum', () => {
     expect(csv.startsWith('﻿')).toBe(true);
     const [header, row] = csv.slice(1).split('\r\n');
     expect(header).toBe(
-      'Megvan;Pokémon;Set;Set kód;Kártyaszám;Nyomási változat;Nyelv;Megjegyzés;Azonosító',
+      'Megvan;Úton;Pokémon;Set;Set kód;Kártyaszám;Nyomási változat;Nyelv;Megjegyzés;Azonosító',
     );
-    expect(row).toContain('Igen;Lechonk;Scarlet & Violet;SVI;1/198;Normal;Angol;');
+    expect(row).toContain('Igen;Nem;Lechonk;Scarlet & Violet;SVI;1/198;Normal;Angol;');
     expect(csv).toContain('"a;b\n""c"""');
   });
 
@@ -61,7 +61,8 @@ describe('export formátum', () => {
     const ws = wb.worksheets[0]!;
     expect(ws.getRow(1).getCell(1).value).toBe('Megvan');
     expect(ws.getRow(2).getCell(1).value).toBe('Igen');
-    expect(ws.getRow(2).getCell(7).value).toBe('Angol');
+    expect(ws.getRow(2).getCell(2).value).toBe('Nem');
+    expect(ws.getRow(2).getCell(8).value).toBe('Angol');
     expect(ws.views[0]).toMatchObject({ state: 'frozen', ySplit: 1 });
     expect(ws.autoFilter).toBeTruthy();
   });
@@ -155,7 +156,7 @@ describe('API: export és mentés', () => {
     expect(res.headers['content-disposition']).toContain('GMS-hianylista-');
     const rows = res.body.slice(1).split('\r\n').filter(Boolean);
     expect(rows).toHaveLength(3);
-    expect(rows[1]!.split(';')[8]).toBe(listCards(db).find((c) => c.id === 3)!.displayId);
+    expect(rows[1]!.split(';')[9]).toBe(listCards(db).find((c) => c.id === 3)!.displayId);
   });
 
   it('T-EXP-05: 400 azonosító POST-tal', async () => {

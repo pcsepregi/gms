@@ -35,13 +35,14 @@ interface Props {
   loading: boolean;
   onClose: () => void;
   onToggle: (card: Card) => void;
+  onToggleOnTheWay: (card: Card) => void;
 }
 
 /**
  * Kártya részletei oldalpanelen a lista fölött (S-10/EF4, S-20/EF1), innen
  * szerkeszthető (S-23) és törölhető (S-24).
  */
-export function CardDetails({ card, loading, onClose, onToggle }: Props) {
+export function CardDetails({ card, loading, onClose, onToggle, onToggleOnTheWay }: Props) {
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [shownId, setShownId] = useState(card?.id);
@@ -116,7 +117,11 @@ export function CardDetails({ card, loading, onClose, onToggle }: Props) {
         />
       )}
       {card && !editing && (
-        <div className="panel-body" data-owned={String(card.owned)}>
+        <div
+          className="panel-body"
+          data-owned={String(card.owned)}
+          data-on-the-way={String(card.onTheWay)}
+        >
           <div className="panel-media">
             <CardImage card={card} size="large" />
           </div>
@@ -150,6 +155,20 @@ export function CardDetails({ card, loading, onClose, onToggle }: Props) {
             </span>
             <span>{t.owned}</span>
           </label>
+          {!card.owned && (
+            <label className="switch">
+              <input
+                type="checkbox"
+                role="switch"
+                checked={card.onTheWay}
+                onChange={() => onToggleOnTheWay(card)}
+              />
+              <span className="switch-track" aria-hidden="true">
+                <span className="switch-thumb" />
+              </span>
+              <span>{t.onTheWay}</span>
+            </label>
+          )}
           <dl className="facts">
             <dt>{t.set}</dt>
             <dd>{card.setName}</dd>

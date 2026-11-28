@@ -76,7 +76,7 @@ describe('Beállítások oldal (S-02/EF3)', () => {
 const grp = (key: string, owned: number, all: number, label = key) => ({ key, label, owned, all });
 
 const stats = {
-  total: { owned: 2, all: 3 },
+  total: { owned: 2, all: 3, onTheWay: 0 },
   byLanguage: [
     { ...grp('DE', 1, 2, 'Német'), ownedByPokemon: { 'Pokemon A': 1 } },
     { ...grp('EN', 1, 1, 'Angol'), ownedByPokemon: { 'Pokemon A': 1 } },
@@ -97,6 +97,15 @@ describe('Áttekintés oldal (S-30…S-33)', () => {
     expect(screen.getByTestId('hero-percent')).toHaveTextContent('67%');
     expect(screen.getByText('Német – még 1 lap')).toBeInTheDocument();
     expect(screen.getByText('Még nem jelöltél meg új lapot az appban.')).toBeInTheDocument();
+  });
+
+  it('az úton lévő lapok a hiányzók számában külön látszanak', async () => {
+    mockApi({
+      '/api/health': { body: health },
+      '/api/stats': { body: { ...stats, total: { owned: 2, all: 3, onTheWay: 1 } } },
+    });
+    renderWithProviders(<App />, '/');
+    expect(await screen.findByText(/1 hiányzik, ebből 1 úton/u)).toBeInTheDocument();
   });
 
   it('a sávok a csoport hiányzó lapjaira szűrt listára vezetnek (T-DSH-06)', async () => {
@@ -123,7 +132,7 @@ describe('Áttekintés oldal (S-30…S-33)', () => {
     mockApi({
       '/api/health': { body: health },
       '/api/stats': {
-        body: { ...stats, total: { owned: 0, all: 0 }, byLanguage: [], closest: [] },
+        body: { ...stats, total: { owned: 0, all: 0, onTheWay: 0 }, byLanguage: [], closest: [] },
       },
     });
     renderWithProviders(<App />, '/');

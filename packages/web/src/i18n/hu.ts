@@ -23,7 +23,8 @@ export const hu = {
     empty: 'Még nincs kártya az adatbázisban. Az első lépés az Excel importálása.',
     toList: 'Kártyák megnyitása',
     percent: (p: number) => `${p}%`,
-    missingCount: (n: number) => `${n} hiányzik`,
+    missingCount: (n: number, onTheWay = 0) =>
+      onTheWay > 0 ? `${n} hiányzik, ebből ${onTheWay} úton` : `${n} hiányzik`,
     languages: 'Nyelvek',
     closest: 'Majdnem kész',
     closestNone: 'Nincs olyan nyelv vagy set, amelyből már csak kevés hiányzik.',
@@ -52,8 +53,10 @@ export const hu = {
     searchPlaceholder: 'Keresés: Pokémon, set, szám, nyelv, megjegyzés…',
     searchHint: 'Gyorsbillentyű: /',
     clearSearch: 'Keresés törlése',
-    count: (n: number, missing: number) =>
-      n === 0 ? '0 kártya' : `${n} kártya, ebből ${missing} hiányzik`,
+    count: (n: number, missing: number, onTheWay = 0) =>
+      n === 0
+        ? '0 kártya'
+        : `${n} kártya, ebből ${missing} hiányzik${onTheWay > 0 ? ` (${onTheWay} úton)` : ''}`,
     empty: 'Nincs a feltételeknek megfelelő kártya.',
     emptyDb: 'Még nincs kártya az adatbázisban.',
     clearFilters: 'Szűrők törlése',
@@ -77,6 +80,7 @@ export const hu = {
       all: 'Mind',
       owned: 'Megvan',
       missing: 'Hiányzik',
+      onTheWay: 'Úton',
     },
     image: {
       fallback: 'Csak tartalék kép',
@@ -103,6 +107,10 @@ export const hu = {
     exportCsv: 'CSV',
     exportFailed: 'Az export nem sikerült.',
     missingTag: 'Hiányzik',
+    onTheWayTag: 'Úton',
+    /** Az "Úton" felirattal kezdődik (akadálymentesség: label-content-name-mismatch). */
+    toggleOnTheWay: (name: string) => `Úton: ${name}`,
+    markOnTheWay: 'Úton',
     ownedTag: 'Megvan',
     /** A látható "Megvan" felirattal kezdődik (akadálymentesség: label-content-name-mismatch). */
     toggleOwned: (name: string) => `Megvan: ${name}`,
@@ -111,6 +119,7 @@ export const hu = {
       `${c.pokemon} ${c.cardNumber}, ${c.finish}, ${c.languageCode}`,
     columns: {
       owned: 'Megvan',
+      onTheWay: 'Úton',
       image: 'Kép',
       pokemon: 'Pokémon',
       set: 'Set',
@@ -128,6 +137,7 @@ export const hu = {
     close: 'Bezárás',
     notFound: 'A kártya nem található.',
     owned: 'Megvan',
+    onTheWay: 'Úton (megrendelve, még nem érkezett meg)',
     set: 'Set',
     setCode: 'Setkód',
     number: 'Kártyaszám',
@@ -205,6 +215,8 @@ export const hu = {
   toast: {
     markedOwned: (name: string) => `Megvan: ${name}`,
     markedMissing: (name: string) => `Nincs meg: ${name}`,
+    markedOnTheWay: (name: string) => `Úton: ${name}`,
+    unmarkedOnTheWay: (name: string) => `Nincs úton: ${name}`,
     undo: 'Visszavonás',
     saveFailed: 'A mentés nem sikerült, az állapot visszaállt.',
     created: (name: string) => `Felvéve: ${name}`,

@@ -17,7 +17,7 @@ describe('computeStats (T-DSH-01)', () => {
   const stats = computeStats(cards, new Map());
 
   it('az összesítés és minden csoport egyezik egy független számolással', () => {
-    expect(stats.total).toEqual({ owned: 3, all: 6 });
+    expect(stats.total).toEqual({ owned: 3, all: 6, onTheWay: 0 });
     const check = (groups: StatGroup[], pick: (c: (typeof cards)[number]) => string) => {
       for (const grp of groups) {
         const inGroup = cards.filter((c) => pick(c) === grp.key);
@@ -47,7 +47,7 @@ describe('computeStats (T-DSH-01)', () => {
 
   it('üres gyűjtemény', () => {
     const empty = computeStats([], new Map());
-    expect(empty.total).toEqual({ owned: 0, all: 0 });
+    expect(empty.total).toEqual({ owned: 0, all: 0, onTheWay: 0 });
     expect(empty.closest).toEqual([]);
     expect(empty.recent).toEqual([]);
   });

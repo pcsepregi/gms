@@ -17,6 +17,7 @@ export interface CardSpec {
   finish?: string;
   language?: string;
   owned?: boolean;
+  onTheWay?: boolean;
   note?: string;
   imageStatus?: Card['image']['status'];
   updatedAt?: string;
@@ -33,6 +34,7 @@ export function makeCard(spec: CardSpec = {}): Card {
     id,
     displayId: `${language.shortCode}-${pokemon}-${cardNumber}-${finish}`.replaceAll(' ', '_'),
     owned: spec.owned ?? false,
+    onTheWay: spec.onTheWay ?? false,
     pokemon,
     setName: spec.setName ?? 'Set One',
     setCode: spec.setCode === undefined ? 'S1' : spec.setCode,

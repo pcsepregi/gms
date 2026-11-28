@@ -113,6 +113,18 @@ describe('szűrés (S-13)', () => {
     expect(ids(filterCards(all, q({ image: ['none'], pokemon: ['P1'] })))).toEqual([]);
   });
 
+  it('Úton: a hiányzók része; az "úton" szűrő csak a megrendelteket adja', () => {
+    const owned = makeCard({ owned: true });
+    const missing = makeCard({ owned: false });
+    const way = makeCard({ owned: false, onTheWay: true });
+    const all = [owned, missing, way];
+    expect(ids(filterCards(all, q({ owned: 'onTheWay' })))).toEqual([way.id]);
+    expect(ids(filterCards(all, q({ owned: 'missing' })))).toEqual([missing.id, way.id]);
+    expect(queryToParams(q({ owned: 'onTheWay' })).get('allapot')).toBe('uton');
+    expect(queryFromParams(new URLSearchParams('allapot=uton')).owned).toBe('onTheWay');
+    expect(hasActiveFilters(q({ owned: 'onTheWay' }))).toBe(true);
+  });
+
   it('setkód szűrő: több kód VAGY kapcsolatban, a kód nélküli lapok külön értéken', () => {
     const a = makeCard({ setCode: 'SVI' });
     const b = makeCard({ setCode: 'PAF' });

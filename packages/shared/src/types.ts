@@ -22,6 +22,8 @@ export interface Card {
   id: number;
   displayId: string;
   owned: boolean;
+  /** Megrendelve, de még nem érkezett meg; csak nem "megvan" lapnál igaz. */
+  onTheWay: boolean;
   pokemon: string;
   setName: string;
   setCode: string | null;

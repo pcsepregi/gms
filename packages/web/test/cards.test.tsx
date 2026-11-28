@@ -23,6 +23,7 @@ function card(
     id,
     displayId: `${language.shortCode}-${p.pokemon ?? 'Alfa'}-${p.cardNumber ?? '1/10'}-${finish}`,
     owned: false,
+    onTheWay: false,
     pokemon: 'Alfa',
     setName: 'Első set',
     setCode: 'ES',
@@ -117,6 +118,7 @@ describe('kártyalista (S-10, S-11)', () => {
       .map((h) => h.textContent);
     expect(headers).toEqual([
       'Megvan',
+      'Úton',
       'Kép',
       'Pokémon',
       'Set',
@@ -126,7 +128,7 @@ describe('kártyalista (S-10, S-11)', () => {
       'Nyelv',
       'Megjegyzés',
     ]);
-    expect(within(table).getAllByRole('checkbox')).toHaveLength(4);
+    expect(within(table).getAllByRole('checkbox')).toHaveLength(8);
     expect(localStorage.getItem('gms.cardView')).toBe('table');
     fireEvent.click(screen.getByRole('button', { name: 'Rács' }));
     expect(screen.getByTestId('card-grid')).toBeInTheDocument();
@@ -330,6 +332,71 @@ describe('jelölés (S-20)', () => {
     fireEvent.click(checkbox);
     await waitFor(() => expect(calls).toHaveLength(3));
     await waitFor(() => expect(checkbox).toBeChecked());
+  });
+
+  it('Úton: rácsról, panelről és táblázatból jelölhető, a megvan törli, az Úton szűrő és a szám követi', async () => {
+    const calls: boolean[] = [];
+    renderCards('/kartyak', {
+      'PUT /api/cards/2/on-the-way': (init) => {
+        const { onTheWay } = JSON.parse(String(init?.body)) as { onTheWay: boolean };
+        calls.push(onTheWay);
+        return { body: { ...CARDS[1], onTheWay } };
+      },
+      'PUT /api/cards/2/owned': (init) => {
+        const { owned } = JSON.parse(String(init?.body)) as { owned: boolean };
+        return { body: { ...CARDS[1], owned, onTheWay: false } };
+      },
+    });
+    await waitFor(() => expect(shownCards()).toHaveLength(4));
+    const tile = shownCards()[1]!;
+    // Megvan lapon (1. kártya) nincs "Úton" gomb.
+    expect(within(shownCards()[0]!).queryByRole('button', { name: /^Úton:/u })).toBeNull();
+
+    fireEvent.click(within(tile).getByRole('button', { name: 'Úton: Alfa 1/10 Reverse Holo DE' }));
+    await waitFor(() => expect(tile).toHaveAttribute('data-on-the-way', 'true'));
+    expect(calls).toEqual([true]);
+    expect(within(tile).getByText('Úton', { selector: '.tile-missing' })).toBeInTheDocument();
+    expect(count()).toBe('4 kártya, ebből 2 hiányzik (1 úton)');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Úton' }));
+    expect(location()).toBe('/kartyak?allapot=uton');
+    expect(count()).toBe('1 kártya, ebből 1 hiányzik (1 úton)');
+    fireEvent.click(screen.getByRole('button', { name: 'Mind' }));
+
+    // Táblázat: az oszlop jelölője követi, megvan lapnál letiltott.
+    fireEvent.click(screen.getByRole('button', { name: 'Táblázat' }));
+    const box = screen.getAllByRole('checkbox', { name: 'Úton: Alfa 1/10 Reverse Holo DE' })[0]!;
+    expect(box).toBeChecked();
+    expect(
+      screen.getAllByRole('checkbox', { name: /^Úton:/u }).some((b) => b.hasAttribute('disabled')),
+    ).toBe(true);
+    fireEvent.click(box);
+    await waitFor(() => expect(calls).toEqual([true, false]));
+    await waitFor(() => expect(box).not.toBeChecked());
+  });
+
+  it('Úton: a részletek panelen kapcsoló, megvan lapnál nincs', async () => {
+    const calls: boolean[] = [];
+    renderCards('/kartyak/2', {
+      'PUT /api/cards/2/on-the-way': (init) => {
+        const { onTheWay } = JSON.parse(String(init?.body)) as { onTheWay: boolean };
+        calls.push(onTheWay);
+        return { body: { ...CARDS[1], onTheWay } };
+      },
+      'PUT /api/cards/2/owned': { body: { ...CARDS[1], owned: true, onTheWay: false } },
+    });
+    await waitFor(() => expect(shownCards()).toHaveLength(4));
+    const panel = screen.getByTestId('card-details');
+    const sw = within(panel).getByRole('switch', { name: /^Úton/u });
+    fireEvent.click(sw);
+    await waitFor(() => expect(sw).toBeChecked());
+    expect(calls).toEqual([true]);
+    expect(await screen.findByRole('status')).toHaveTextContent('Úton: Alfa 1/10 (DE)');
+    // Ha megérkezett (megvan), az úton kapcsoló eltűnik.
+    fireEvent.click(within(panel).getByRole('switch', { name: 'Megvan' }));
+    await waitFor(() =>
+      expect(within(panel).queryByRole('switch', { name: /^Úton/u })).not.toBeInTheDocument(),
+    );
   });
 
   it('S-20/EF3: Visszavonás az értesítésből', async () => {

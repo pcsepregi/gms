@@ -23,12 +23,13 @@ import { FilterMenu, type FilterOption } from '../components/FilterMenu';
 import { CloseIcon, GridIcon, ListIcon, PlusIcon, SearchIcon, SortIcon } from '../components/icons';
 import { useCardQuery } from '../hooks/useCardQuery';
 import { cardName, useOwnedToggle } from '../hooks/useOwnedToggle';
+import { useOnTheWayToggle } from '../hooks/useOnTheWayToggle';
 import { useViewMode } from '../hooks/useViewMode';
 import { hu } from '../i18n/hu';
 
 const t = hu.cards;
 const SORT_KEYS: SortKey[] = ['set', 'number', 'language', 'pokemon', 'updated'];
-const OWNED: OwnedFilter[] = ['all', 'owned', 'missing'];
+const OWNED: OwnedFilter[] = ['all', 'owned', 'missing', 'onTheWay'];
 const IMAGE: ImageFilter[] = ['fallback', 'none'];
 
 function countBy<T>(items: readonly Card[], key: (c: Card) => T) {
@@ -103,6 +104,7 @@ function exportName(q: CardQuery): string {
   const parts: string[] = [];
   if (q.owned === 'missing') parts.push('hianylista');
   if (q.owned === 'owned') parts.push('megvan');
+  if (q.owned === 'onTheWay') parts.push('uton');
   if (q.languages.length === 1) parts.push(q.languages[0]!.toLowerCase());
   if (q.pokemon.length === 1) parts.push(q.pokemon[0]!);
   if (q.sets.length === 1) parts.push(q.sets[0]!);
@@ -139,6 +141,7 @@ export function CardsPage({ creating = false }: { creating?: boolean }) {
   const { query, params, update, clear } = useCardQuery();
   const [view, setView] = useViewMode();
   const toggle = useOwnedToggle();
+  const toggleOnTheWay = useOnTheWayToggle();
   const navigate = useNavigate();
   const { id } = useParams();
   const toast = useToast();
@@ -179,6 +182,7 @@ export function CardsPage({ creating = false }: { creating?: boolean }) {
     [allCards, query, deferredText],
   );
   const missing = useMemo(() => shown.filter((c) => !c.owned).length, [shown]);
+  const onTheWay = useMemo(() => shown.filter((c) => c.onTheWay).length, [shown]);
 
   const linkSearch = params.toString() ? `?${params.toString()}` : '';
   const selectedId = creating || id === undefined ? null : Number(id);
@@ -239,7 +243,7 @@ export function CardsPage({ creating = false }: { creating?: boolean }) {
       <div className="page-head">
         <h1>{t.heading}</h1>
         <p className="result-count" data-testid="result-count" aria-live="polite">
-          {cardsQuery.data ? t.count(shown.length, missing) : ''}
+          {cardsQuery.data ? t.count(shown.length, missing, onTheWay) : ''}
         </p>
         <div className="toolbar-end">
           <ExportMenu
@@ -403,9 +407,19 @@ export function CardsPage({ creating = false }: { creating?: boolean }) {
       )}
       {shown.length > 0 &&
         (view === 'grid' ? (
-          <CardGrid cards={shown} linkSearch={linkSearch} onToggle={toggle} />
+          <CardGrid
+            cards={shown}
+            linkSearch={linkSearch}
+            onToggle={toggle}
+            onToggleOnTheWay={toggleOnTheWay}
+          />
         ) : (
-          <CardTable cards={shown} linkSearch={linkSearch} onToggle={toggle} />
+          <CardTable
+            cards={shown}
+            linkSearch={linkSearch}
+            onToggle={toggle}
+            onToggleOnTheWay={toggleOnTheWay}
+          />
         ))}
 
       {creating && (
@@ -427,6 +441,7 @@ export function CardsPage({ creating = false }: { creating?: boolean }) {
           loading={cardsQuery.isPending}
           onClose={closeDetails}
           onToggle={toggle}
+          onToggleOnTheWay={toggleOnTheWay}
         />
       )}
     </section>

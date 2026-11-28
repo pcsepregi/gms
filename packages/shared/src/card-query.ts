@@ -73,7 +73,8 @@ export function setCodeKey(card: Pick<Card, 'setCode'>): string {
   return card.setCode?.trim() || NO_SET_CODE;
 }
 
-export type OwnedFilter = 'all' | 'owned' | 'missing';
+/** `missing`: nincs meg (az úton lévők is); `onTheWay`: megrendelve, még nem érkezett meg. */
+export type OwnedFilter = 'all' | 'owned' | 'missing' | 'onTheWay';
 export type ImageFilter = 'fallback' | 'none';
 export type SortKey = 'set' | 'number' | 'language' | 'pokemon' | 'updated';
 export type SortDir = 'asc' | 'desc';
@@ -120,6 +121,12 @@ export function hasActiveFilters(q: CardQuery): boolean {
   );
 }
 
+function matchesOwned(c: Card, f: OwnedFilter): boolean {
+  if (f === 'all') return true;
+  if (f === 'onTheWay') return c.onTheWay;
+  return c.owned === (f === 'owned');
+}
+
 /**
  * Szűrés: a különböző szűrők ÉS, egy szűrőn belül az értékek VAGY kapcsolatban
  * vannak (S-13/EF2), és a keresés is ÉS feltétel (S-13/EF3).
@@ -135,7 +142,7 @@ export function filterCards(cards: readonly Card[], q: CardQuery): Card[] {
 
   return cards.filter(
     (c) =>
-      (q.owned === 'all' || c.owned === (q.owned === 'owned')) &&
+      matchesOwned(c, q.owned) &&
       (!pokemon || pokemon.has(c.pokemon)) &&
       (!languages || languages.has(c.language.shortCode)) &&
       (!sets || sets.has(c.setName)) &&
@@ -236,6 +243,7 @@ const OWNED_PARAM: Record<OwnedFilter, string | null> = {
   all: null,
   owned: 'megvan',
   missing: 'hianyzik',
+  onTheWay: 'uton',
 };
 const IMAGE_PARAM: Record<ImageFilter, string> = { fallback: 'tartalek', none: 'nincs' };
 const SORT_PARAM: Record<SortKey, string> = {

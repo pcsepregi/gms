@@ -164,7 +164,7 @@ export function HomePage() {
                 <span className="hero-all"> / {s.total.all}</span>
               </p>
               <p className="muted hero-sub">
-                {t.missingCount(s.total.all - s.total.owned)}
+                {t.missingCount(s.total.all - s.total.owned, s.total.onTheWay)}
                 {' · '}
                 <Link to="/kartyak">{t.toList}</Link>
               </p>

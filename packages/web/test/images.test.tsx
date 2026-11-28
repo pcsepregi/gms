@@ -13,6 +13,7 @@ function card(id: number, image: Partial<Card['image']>): Card {
     id,
     displayId: `DE-Alfa-${id}`,
     owned: false,
+    onTheWay: false,
     pokemon: 'Alfa',
     setName: 'Set',
     setCode: 'S',

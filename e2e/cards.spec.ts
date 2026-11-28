@@ -66,6 +66,7 @@ test.describe('kártyalista (S-10, S-11)', () => {
     const table = page.getByTestId('card-table');
     await expect(table.getByRole('columnheader')).toHaveText([
       'Megvan',
+      'Úton',
       'Kép',
       'Pokémon',
       'Set',
@@ -326,4 +327,22 @@ test.describe('megjelenés (S-62)', () => {
       await check('beállítások');
     });
   }
+});
+
+test('Úton: jelölés a rácson, az Úton szűrő, visszavonás', async ({ page }) => {
+  await openList(page);
+  await page.getByRole('button', { name: 'Hiányzik', exact: true }).click();
+  const first = page.getByTestId('card').first();
+  await first.getByRole('button', { name: /^Úton:/u }).click();
+  await expect(first).toHaveAttribute('data-on-the-way', 'true');
+  await page.getByRole('button', { name: 'Úton', exact: true }).click();
+  await expect(page).toHaveURL(/allapot=uton/u);
+  await expect(page.getByTestId('card')).toHaveCount(1);
+  // Visszavonás: az állapot marad az eredeti (a többi teszt közös adatbázist használ).
+  await page
+    .getByTestId('card')
+    .first()
+    .getByRole('button', { name: /^Úton:/u })
+    .click();
+  await expect(page.getByTestId('card')).toHaveCount(0);
 });

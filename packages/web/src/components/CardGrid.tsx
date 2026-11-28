@@ -10,19 +10,28 @@ interface Props {
   cards: Card[];
   linkSearch: string;
   onToggle: (card: Card) => void;
+  onToggleOnTheWay: (card: Card) => void;
 }
 
 /** Rácsnézet (S-10): kép vagy helykitöltő, a hiányzó lapok szürkék és halványak. */
-export function CardGrid({ cards, linkSearch, onToggle }: Props) {
+export function CardGrid({ cards, linkSearch, onToggle, onToggleOnTheWay }: Props) {
   return (
     <ul className="card-grid" data-testid="card-grid">
       {cards.map((c) => (
-        <li key={c.id} className="tile" data-owned={String(c.owned)} data-testid="card">
+        <li
+          key={c.id}
+          className="tile"
+          data-owned={String(c.owned)}
+          data-on-the-way={String(c.onTheWay)}
+          data-testid="card"
+        >
           <Link className="tile-link" to={{ pathname: `/kartyak/${c.id}`, search: linkSearch }}>
             <span className="tile-media">
               <CardImage card={c} />
               <span className="tile-lang">{c.language.nameHu}</span>
-              {!c.owned && <span className="tile-missing">{t.missingTag}</span>}
+              {!c.owned && (
+                <span className="tile-missing">{c.onTheWay ? t.onTheWayTag : t.missingTag}</span>
+              )}
             </span>
             <span className="tile-body">
               <span className="tile-name">{c.pokemon}</span>
@@ -48,6 +57,20 @@ export function CardGrid({ cards, linkSearch, onToggle }: Props) {
             <span className="own-box">{c.owned && <CheckIcon />}</span>
             {t.markOwned}
           </button>
+          {!c.owned && (
+            <button
+              type="button"
+              className="own-toggle way-toggle"
+              aria-pressed={c.onTheWay}
+              aria-label={t.toggleOnTheWay(
+                `${c.pokemon} ${c.cardNumber} ${c.finish.name} ${c.language.shortCode}`,
+              )}
+              onClick={() => onToggleOnTheWay(c)}
+            >
+              <span className="own-box">{c.onTheWay && <CheckIcon />}</span>
+              {t.markOnTheWay}
+            </button>
+          )}
         </li>
       ))}
     </ul>

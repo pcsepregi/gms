@@ -32,6 +32,7 @@ function card(id: number, p: Partial<Card> = {}): Card {
     id,
     displayId: `EN-Alfa-1/10-Normal`,
     owned: false,
+    onTheWay: false,
     pokemon: 'Alfa',
     setName: 'Első set',
     setCode: 'ES',
