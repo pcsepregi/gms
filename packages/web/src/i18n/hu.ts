@@ -39,6 +39,10 @@ export const hu = {
     recent: 'Legutóbb megszerzett',
     recentNone: 'Még nem jelöltél meg új lapot az appban.',
     openMissing: 'a hiányzó lapok megnyitása',
+    legend: 'Jelmagyarázat',
+    legendMissing: 'Hiányzik',
+    segmentTitle: (context: string, pokemon: string, n: number) =>
+      `${context} · ${pokemon}: ${n} megvan`,
   },
   cards: {
     heading: 'Kártyák',

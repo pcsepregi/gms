@@ -99,9 +99,11 @@ describe('kártyalista (S-10, S-11)', () => {
     expect(within(owned).queryByText('Hiányzik')).not.toBeInTheDocument();
     expect(within(owned).getAllByText('Alfa').length).toBeGreaterThan(0);
     expect(within(owned).getByText('Első set')).toBeInTheDocument();
-    expect(within(owned).getByText('Angol')).toBeInTheDocument();
-    // Kép, ha van; különben helykitöltő.
+    // A nyelv teljes névvel a képen lévő címkén (nem kétbetűs kóddal).
+    expect(owned.querySelector('.tile-lang')).toHaveTextContent(/^Angol$/u);
+    // Kép, ha van; különben helykitöltő szürke figurával.
     expect(document.querySelector('img.card-img')).toHaveAttribute('loading', 'lazy');
+    expect(owned.querySelector('.card-placeholder svg.ph-art')).toBeInTheDocument();
   });
 
   it('S-11: táblázat a megadott oszlopokkal, a választás megmarad', async () => {

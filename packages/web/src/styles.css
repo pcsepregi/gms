@@ -17,6 +17,12 @@
   --on-accent: #ffffff;
   --accent-soft: #f4e5da;
   --danger: #a3302b;
+  /* Dashboard diagramszínek (Pokémononként), ellenőrizve színtévesztésre is. */
+  --series-1: #a3542b;
+  --series-2: #2d6db0;
+  --series-3: #c0981a;
+  --series-other: #8a8178;
+  --chart-track: #ebe6df;
   --shadow: 0 1px 2px rgb(0 0 0 / 6%), 0 8px 24px rgb(0 0 0 / 8%);
   --backdrop: rgb(20 18 16 / 22%);
   --radius: 6px;
@@ -46,6 +52,11 @@
     --on-accent: #1b1410;
     --accent-soft: #3b2a1f;
     --danger: #f08a80;
+    --series-1: #b85c34;
+    --series-2: #5f98dc;
+    --series-3: #b59e28;
+    --series-other: #8f877d;
+    --chart-track: #34312c;
     --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 35%);
     --backdrop: rgb(0 0 0 / 45%);
   }
@@ -65,6 +76,11 @@
   --on-accent: #1b1410;
   --accent-soft: #3b2a1f;
   --danger: #f08a80;
+  --series-1: #b85c34;
+  --series-2: #5f98dc;
+  --series-3: #b59e28;
+  --series-other: #8f877d;
+  --chart-track: #34312c;
   --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 8px 24px rgb(0 0 0 / 35%);
   --backdrop: rgb(0 0 0 / 45%);
 }
@@ -635,7 +651,7 @@ h3 {
 /* Rács */
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
   gap: calc(var(--space) * 4);
   margin: 0;
   padding: 0;
@@ -693,8 +709,7 @@ h3 {
 
 .tile[data-owned='false'] .ph-art,
 .panel-body[data-owned='false'] .ph-art {
-  background: transparent;
-  border-style: dashed;
+  opacity: 0.6;
 }
 
 .tile-lang,
@@ -711,12 +726,15 @@ h3 {
 
 .tile-lang {
   left: calc(var(--space) * 4.5);
+  max-width: calc(100% - var(--space) * 9);
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--line-strong);
 }
 
 .tile-missing {
+  top: auto;
+  bottom: calc(var(--space) * 4.5);
   right: calc(var(--space) * 4.5);
   background: var(--text);
   color: var(--bg);
@@ -735,8 +753,7 @@ h3 {
 }
 
 .tile-set,
-.tile-meta,
-.tile-language {
+.tile-meta {
   font-size: 13px;
   color: var(--muted);
   white-space: nowrap;
@@ -824,10 +841,25 @@ h3 {
 }
 
 .ph-art {
-  flex: 0 0 46%;
-  border: 1px solid var(--line-strong);
-  border-radius: 5px;
-  background: var(--accent-soft);
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-height: 62%;
+  margin: auto 0;
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+.ph-art .ph-body {
+  fill: var(--surface-2);
+}
+
+.ph-art .ph-eye {
+  fill: var(--surface);
+}
+
+.tile[data-owned='false'] .ph-art .ph-body {
+  fill: var(--bg);
 }
 
 .ph-number {
@@ -859,6 +891,13 @@ h3 {
   padding: 0;
   gap: 0;
   border-radius: 3px;
+  justify-content: center;
+}
+
+.card-img-thumb .ph-art {
+  max-height: none;
+  margin: 0;
+  padding: 1px;
 }
 
 .card-img-large {
@@ -1416,9 +1455,8 @@ h3 {
 .hero {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: calc(var(--space) * 6);
+  align-items: center;
+  gap: calc(var(--space) * 8);
   padding: calc(var(--space) * 6);
   margin-bottom: calc(var(--space) * 4);
   border: 1px solid var(--line);
@@ -1428,6 +1466,10 @@ h3 {
 
 .hero p {
   margin: 0;
+}
+
+.hero-main {
+  flex: 1 1 220px;
 }
 
 .hero-label {
@@ -1450,21 +1492,122 @@ h3 {
   margin-top: calc(var(--space) * 1.5) !important;
 }
 
-.hero-side {
-  flex: 1 1 260px;
-  max-width: 420px;
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--space) * 2);
+.hero-percent {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-.hero-percent {
-  font-size: 32px;
-  font-weight: 600;
+/* Gyűrűdiagram */
+.donut {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.donut svg {
+  position: absolute;
+  inset: 0;
+}
+
+.donut-track {
+  stroke: var(--chart-track);
+}
+
+.donut-center {
+  position: relative;
+  text-align: center;
+}
+
+.legend {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: calc(var(--space) * 2.5);
+  row-gap: calc(var(--space) * 2);
+  min-width: 220px;
+  margin: 0;
+  padding: 0 0 0 calc(var(--space) * 6);
+  border-left: 1px solid var(--line);
+  list-style: none;
+  font-size: 14px;
+}
+
+.legend li {
+  display: contents;
+}
+
+.legend .num {
   text-align: right;
 }
 
-.hero-side .bar {
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.swatch-missing {
+  background: var(--chart-track);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.legend-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Nyelvek: kis gyűrűk rácsban */
+.lang-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: calc(var(--space) * 2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lang-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: calc(var(--space) * 3);
+  padding: calc(var(--space) * 2.5) calc(var(--space) * 3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.lang-item:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+
+.lang-name {
+  align-self: end;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.lang-count {
+  align-self: start;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.lang-donut {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bar {
   height: 10px;
 }
 
@@ -1514,12 +1657,6 @@ h3 {
   list-style: none;
   margin: 0;
   padding: 0;
-}
-
-#dash-lang + .bar-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: calc(var(--space) * 8);
 }
 
 .bar-row {
@@ -1602,12 +1739,18 @@ h3 {
 }
 
 @media (max-width: 720px) {
-  .dash-grid,
-  #dash-lang + .bar-list {
+  .dash-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .hero-figure {
     font-size: 48px;
+  }
+
+  .legend {
+    padding: calc(var(--space) * 4) 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    flex: 1 1 100%;
   }
 }

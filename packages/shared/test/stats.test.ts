@@ -32,6 +32,14 @@ describe('computeStats (T-DSH-01)', () => {
     check(stats.byFinish, (c) => c.finish.name);
   });
 
+  it('a nyelvenkénti megvan lapok Pokémononként is összeadódnak', () => {
+    const de = stats.byLanguage.find((x) => x.key === 'DE')!;
+    const sum = Object.values(de.ownedByPokemon).reduce((n, x) => n + x, 0);
+    expect(sum).toBe(de.owned);
+    expect(de.ownedByPokemon['Pokemon B']).toBeUndefined();
+    expect(stats.byLanguage.find((x) => x.key === 'FR')!.ownedByPokemon).toEqual({});
+  });
+
   it('a nyelvek a nyelvtábla sorrendjében, magyar névvel jönnek', () => {
     expect(stats.byLanguage.map((x) => x.key)).toEqual(['EN', 'FR', 'DE']);
     expect(stats.byLanguage[2]!.label).toBe('Német');

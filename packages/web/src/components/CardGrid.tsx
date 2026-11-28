@@ -21,7 +21,7 @@ export function CardGrid({ cards, linkSearch, onToggle }: Props) {
           <Link className="tile-link" to={{ pathname: `/kartyak/${c.id}`, search: linkSearch }}>
             <span className="tile-media">
               <CardImage card={c} />
-              <span className="tile-lang">{c.language.shortCode}</span>
+              <span className="tile-lang">{c.language.nameHu}</span>
               {!c.owned && <span className="tile-missing">{t.missingTag}</span>}
             </span>
             <span className="tile-body">
@@ -32,7 +32,6 @@ export function CardGrid({ cards, linkSearch, onToggle }: Props) {
                 <span aria-hidden="true"> · </span>
                 <span>{c.finish.name}</span>
               </span>
-              <span className="tile-language">{c.language.nameHu}</span>
             </span>
           </Link>
           <button

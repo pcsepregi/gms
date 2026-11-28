@@ -1,9 +1,10 @@
 import type { Card } from '@gms/shared';
 import { hu } from '../i18n/hu';
+import { PlaceholderArt } from './PlaceholderArt';
 
 /**
- * Kártyakép, vagy amíg nincs kép, egységes helykitöltő: sematikus kártyakeret a
- * Pokémon nevével és a kártyaszámmal (technikai spec 7.1). Tartalék képnél a kép nyelvét
+ * Kártyakép, vagy amíg nincs kép, egységes helykitöltő: szürke kártyakeret a Pokémon
+ * nevével, egy stilizált szürke figurával és a kártyaszámmal (technikai spec 7.1). Tartalék képnél a kép nyelvét
  * jelvény mutatja (S-42/EF2), keresés közben a helykitöltőn "Kép keresése…" látszik (S-41).
  */
 export function CardImage({
@@ -43,10 +44,12 @@ export function CardImage({
       aria-hidden="true"
       data-image-status={card.image.status}
     >
-      {size !== 'thumb' && (
+      {size === 'thumb' ? (
+        <PlaceholderArt className="ph-art" />
+      ) : (
         <>
           <span className="ph-name">{card.pokemon}</span>
-          <span className="ph-art" />
+          <PlaceholderArt className="ph-art" />
           <span className="ph-number">{card.cardNumber}</span>
           {card.image.status === 'pending' && (
             <span className="ph-searching" data-testid="image-searching">

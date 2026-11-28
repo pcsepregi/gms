@@ -12,6 +12,12 @@ export interface StatGroup {
   all: number;
 }
 
+/** Nyelvi csoport: a megvan lapok Pokémononként is (a dashboard kis kördiagramjaihoz). */
+export interface LanguageGroup extends StatGroup {
+  /** Pokémon neve → megvan lapok száma ebben a nyelvben. */
+  ownedByPokemon: Record<string, number>;
+}
+
 export type ClosestKind = 'language' | 'set';
 
 export interface ClosestGroup extends StatGroup {
@@ -21,7 +27,7 @@ export interface ClosestGroup extends StatGroup {
 
 export interface Stats {
   total: { owned: number; all: number };
-  byLanguage: StatGroup[];
+  byLanguage: LanguageGroup[];
   byPokemon: StatGroup[];
   bySet: StatGroup[];
   byFinish: StatGroup[];
@@ -85,11 +91,19 @@ export function computeStats(
   ownedChangedAt: ReadonlyMap<number, string>,
 ): Stats {
   const order = new Map(cards.map((c) => [c.language.shortCode, c.language.sortOrder]));
-  const byLanguage = group(
+  const byLanguage: LanguageGroup[] = group(
     cards,
     (c) => c.language.shortCode,
     (c) => c.language.nameHu,
-  ).sort((a, b) => order.get(a.key)! - order.get(b.key)!);
+  )
+    .sort((a, b) => order.get(a.key)! - order.get(b.key)!)
+    .map((g) => ({ ...g, ownedByPokemon: {} }));
+  const langIndex = new Map(byLanguage.map((g) => [g.key, g]));
+  for (const c of cards) {
+    if (!c.owned) continue;
+    const by = langIndex.get(c.language.shortCode)!.ownedByPokemon;
+    by[c.pokemon] = (by[c.pokemon] ?? 0) + 1;
+  }
   const byPokemon = group(
     cards,
     (c) => c.pokemon,
