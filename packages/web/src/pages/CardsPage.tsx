@@ -2,6 +2,7 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } f
 import { Link, useNavigate, useParams } from 'react-router';
 import {
   NO_SET_CODE,
+  filterCards,
   hasActiveFilters,
   queryCards,
   setCodeKey,
@@ -43,21 +44,22 @@ function textOptions(cards: readonly Card[], key: (c: Card) => string): FilterOp
     .sort((a, b) => a.label.localeCompare(b.label, 'hu'));
 }
 
-/** Az adatokból képzett szűrőértékek (nincs beégetett Pokémon-név, K-10). */
-function useOptions(cards: readonly Card[]) {
+type FacetKey = 'pokemon' | 'languages' | 'sets' | 'setCodes' | 'finishes' | 'image';
+
+/**
+ * Egymásra ható (fazettás) szűrők: egy szűrő lehetőségei azokból a lapokból állnak, amelyek
+ * a többi szűrőnek (és a keresésnek) megfelelnek, a saját szűrőjét nem számítva. A már
+ * kiválasztott értékek akkor is látszanak, ha jelenleg nulla lapot adnának.
+ */
+function useOptions(cards: readonly Card[], query: CardQuery) {
   return useMemo(() => {
-    const langs = new Map<string, { label: string; order: number; count: number }>();
+    const facet = (key: FacetKey) => filterCards(cards, { ...query, [key]: [] });
+
+    // A nyelvek nevei az összes lapból, hogy a kiválasztott nyelv neve mindig megvan.
+    const langInfo = new Map<string, { label: string; order: number }>();
     for (const c of cards) {
-      const l = langs.get(c.language.shortCode);
-      if (l) l.count++;
-      else
-        langs.set(c.language.shortCode, {
-          label: c.language.nameHu,
-          order: c.language.sortOrder,
-          count: 1,
-        });
+      langInfo.set(c.language.shortCode, { label: c.language.nameHu, order: c.language.sortOrder });
     }
-    const imageCounts = countBy(cards, (c) => c.image.status);
     // Setkód → a hozzá tartozó setnevek (a szűrőben segítségnek a kód mellett).
     const codeNames = new Map<string, Set<string>>();
     for (const c of cards) {
@@ -69,27 +71,60 @@ function useOptions(cards: readonly Card[]) {
       code === NO_SET_CODE
         ? t.noSetCode
         : `${code} – ${[...(codeNames.get(code) ?? [])].join(', ')}`;
-    return {
-      pokemon: textOptions(cards, (c) => c.pokemon),
-      sets: textOptions(cards, (c) => c.setName),
-      setCodes: [...countBy(cards, setCodeKey)]
-        .map(([value, count]) => ({ value, label: codeLabel(value), count }))
-        .sort((a, b) =>
-          a.value === NO_SET_CODE
-            ? 1
-            : b.value === NO_SET_CODE
-              ? -1
-              : a.value.localeCompare(b.value),
-        ),
-      setCodeLabel: (code: string) => (code === NO_SET_CODE ? t.noSetCode : code),
-      finishes: textOptions(cards, (c) => c.finish.name),
-      languages: [...langs]
-        .sort((a, b) => a[1].order - b[1].order)
-        .map(([value, l]) => ({ value, label: l.label, count: l.count })),
-      image: IMAGE.map((v) => ({ value: v, label: t.image[v], count: imageCounts.get(v) ?? 0 })),
-      languageName: new Map([...langs].map(([k, v]) => [k, v.label])),
+
+    /** A kiválasztott, de a jelenlegi lapok között nem szereplő értékek 0 darabbal. */
+    const withSelected = (
+      options: FilterOption[],
+      selected: readonly string[],
+      label: (v: string) => string,
+    ) => {
+      const present = new Set(options.map((o) => o.value));
+      const extra = selected
+        .filter((v) => !present.has(v))
+        .map((v) => ({ value: v, label: label(v), count: 0 }));
+      return [...options, ...extra];
     };
-  }, [cards]);
+    const byLabel = (a: FilterOption, b: FilterOption) => a.label.localeCompare(b.label, 'hu');
+    const text = (key: FacetKey, get: (c: Card) => string, selected: readonly string[]) =>
+      withSelected(textOptions(facet(key), get), selected, (v) => v).sort(byLabel);
+
+    const languages = withSelected(
+      [...countBy(facet('languages'), (c) => c.language.shortCode)].map(([value, count]) => ({
+        value,
+        label: langInfo.get(value)?.label ?? value,
+        count,
+      })),
+      query.languages,
+      (v) => langInfo.get(v)?.label ?? v,
+    ).sort(
+      (a, b) =>
+        (langInfo.get(a.value)?.order ?? Infinity) - (langInfo.get(b.value)?.order ?? Infinity),
+    );
+
+    const setCodes = withSelected(
+      [...countBy(facet('setCodes'), setCodeKey)].map(([value, count]) => ({
+        value,
+        label: codeLabel(value),
+        count,
+      })),
+      query.setCodes,
+      codeLabel,
+    ).sort((a, b) =>
+      a.value === NO_SET_CODE ? 1 : b.value === NO_SET_CODE ? -1 : a.value.localeCompare(b.value),
+    );
+
+    const imageCounts = countBy(facet('image'), (c) => c.image.status);
+    return {
+      pokemon: text('pokemon', (c) => c.pokemon, query.pokemon),
+      sets: text('sets', (c) => c.setName, query.sets),
+      setCodes,
+      setCodeLabel: (code: string) => (code === NO_SET_CODE ? t.noSetCode : code),
+      finishes: text('finishes', (c) => c.finish.name, query.finishes),
+      languages,
+      image: IMAGE.map((v) => ({ value: v, label: t.image[v], count: imageCounts.get(v) ?? 0 })),
+      languageName: new Map([...langInfo].map(([k, v]) => [k, v.label])),
+    };
+  }, [cards, query]);
 }
 
 interface Chip {
@@ -142,7 +177,6 @@ export function CardsPage({ creating = false }: { creating?: boolean }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const toast = useToast();
-  const options = useOptions(allCards);
 
   // Keresőmező: helyi állapot, az URL-be azonnal (cserével) kerül, így nem
   // keletkezik minden leütésre új előzménybejegyzés; a szűrés késleltetett értékkel fut.
@@ -160,6 +194,10 @@ export function CardsPage({ creating = false }: { creating?: boolean }) {
     update({ q: value }, { replace: query.q !== '' && value !== '' });
   };
   const deferredText = useDeferredValue(text);
+  const options = useOptions(
+    allCards,
+    useMemo(() => ({ ...query, q: deferredText }), [query, deferredText]),
+  );
 
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
