@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { NavLink, Route, Routes } from 'react-router';
 import { useHealth } from './api/queries';
 import { useBackupStatus } from './api/backup';
@@ -12,6 +13,11 @@ export function App() {
   const health = useHealth();
   const backup = useBackupStatus();
   const warn = backup.data?.configured && backup.data.stale;
+  const title = health.data?.appTitle ?? hu.appTitle;
+  // A böngészőfül címe is a beállított alkalmazásnév.
+  useEffect(() => {
+    document.title = title;
+  }, [title]);
   return (
     <ToastProvider>
       {warn && (
@@ -23,7 +29,7 @@ export function App() {
         </div>
       )}
       <header className="app-header">
-        <span className="app-title">{health.data?.appTitle ?? hu.appTitle}</span>
+        <span className="app-title">{title}</span>
         <nav>
           <NavLink to="/" end>
             {hu.nav.home}

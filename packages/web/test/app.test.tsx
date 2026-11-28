@@ -46,6 +46,7 @@ describe('Beállítások oldal (S-02/EF3)', () => {
     expect(within(box).getByText(/Figyelmeztetések \(1\)/u)).toBeInTheDocument();
     expect(await screen.findByText('Teszt gyűjtemény')).toBeInTheDocument();
     expect(await screen.findByText(/Verzió: 0\.1\.0/u)).toBeInTheDocument();
+    expect(document.title).toBe('Teszt gyűjtemény');
   });
 
   it('import előtt: "Még nem volt import."', async () => {
