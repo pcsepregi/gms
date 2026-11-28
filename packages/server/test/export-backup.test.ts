@@ -57,7 +57,7 @@ describe('export formátum', () => {
   it('T-EXP-01: XLSX rögzített fejléccel, szűrővel, magyar nyelvvel', async () => {
     const buf = await toXlsx([fakeCard()]);
     const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(buf);
+    await wb.xlsx.load(buf as unknown as Parameters<typeof wb.xlsx.load>[0]);
     const ws = wb.worksheets[0]!;
     expect(ws.getRow(1).getCell(1).value).toBe('Megvan');
     expect(ws.getRow(2).getCell(1).value).toBe('Igen');
