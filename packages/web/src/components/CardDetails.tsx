@@ -6,6 +6,7 @@ import { hu } from '../i18n/hu';
 import { CardForm } from './CardForm';
 import { CardImage } from './CardImage';
 import { ConfirmDialog } from './ConfirmDialog';
+import { ManualImage } from './ManualImage';
 import { Panel } from './Panel';
 import { useToast } from './Toasts';
 
@@ -135,6 +136,7 @@ export function CardDetails({ card, loading, onClose, onToggle }: Props) {
             >
               {card.image.status === 'pending' ? t.imageRefreshing : t.imageRefresh}
             </button>
+            <ManualImage key={card.id} card={card} />
           </div>
           <label className="switch">
             <input

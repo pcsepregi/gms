@@ -12,7 +12,7 @@ import type {
   Lookups,
   Stats,
 } from '@gms/shared';
-import { ApiError, deleteJson, getJson, sendJson } from './client';
+import { ApiError, deleteJson, getJson, sendFile, sendJson } from './client';
 
 export const CARDS_KEY = ['cards'] as const;
 export const LOOKUPS_KEY = ['lookups'] as const;
@@ -47,6 +47,21 @@ export function useRefreshImage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => sendJson<Card>('POST', `/api/cards/${id}/image/refresh`, {}),
+    onSuccess: (card) => {
+      qc.setQueryData<Card[]>(CARDS_KEY, (list) => patchCard(list, card.id, () => card));
+      void qc.invalidateQueries({ queryKey: IMAGE_STATUS_KEY });
+    },
+  });
+}
+
+/** Kézi kép: feltöltött fájl vagy képlink. */
+export function useManualImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file, url }: { id: number; file?: Blob; url?: string }) =>
+      file
+        ? sendFile<Card>('PUT', `/api/cards/${id}/image`, file)
+        : sendJson<Card>('PUT', `/api/cards/${id}/image`, { url }),
     onSuccess: (card) => {
       qc.setQueryData<Card[]>(CARDS_KEY, (list) => patchCard(list, card.id, () => card));
       void qc.invalidateQueries({ queryKey: IMAGE_STATUS_KEY });
