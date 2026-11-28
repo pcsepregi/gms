@@ -97,7 +97,8 @@ export const hu = {
       language: 'Nyelv',
       note: 'Megjegyzés',
     },
-    imageFallback: (lang: string) => `Kép: ${lang}`,
+    imageFallback: (lang: string) => `Kép: ${lang.toLocaleLowerCase('hu')}`,
+    imageSearching: 'Kép keresése…',
   },
   details: {
     close: 'Bezárás',
@@ -115,6 +116,16 @@ export const hu = {
     delete: 'Törlés',
     editHeading: 'Kártya szerkesztése',
     finishHelp: 'A nyomási változat jelentése',
+    imageRefresh: 'Kép újrakeresése',
+    imageRefreshing: 'Kép keresése…',
+    imageResult: {
+      pending: 'A kép keresése folyamatban van.',
+      exact: 'Pontos kép található.',
+      fallback: (lang: string) =>
+        `Nincs pontos kép, tartalék: ${lang.toLocaleLowerCase('hu')} nyelvű lap.`,
+      none: 'Ehhez a laphoz nem található kép.',
+      error: 'A képkeresés nem sikerült (hálózati hiba?), később automatikusan újrapróbáljuk.',
+    },
   },
   form: {
     newHeading: 'Új kártya',
@@ -202,6 +213,16 @@ export const hu = {
     none: 'nincs',
     warnings: 'Figyelmeztetések',
     version: 'Verzió',
+    imagesHeading: 'Kártyaképek',
+    imagesIntro:
+      'A képeket a program a háttérben gyűjti össze, és helyben tárolja, így internet nélkül is megjelennek.',
+    imageCounts: {
+      exact: 'Pontos kép',
+      fallback: 'Tartalék kép (más nyelv)',
+      none: 'Nincs kép',
+      pending: 'Keresés folyamatban',
+      error: 'Hiba, később újrapróbálja',
+    },
     finishesHeading: 'Nyomási változatok',
     finishesIntro:
       'A szótár a kártyák nyomási változatait magyarázza. A leírás a kártya részleteinél súgóként jelenik meg.',

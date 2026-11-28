@@ -42,7 +42,13 @@ describe('API alap', () => {
       cardNumber: '154/198',
       finish: { name: 'Normal', description: 'Standard non-holo printing.' },
       language: { name: 'English', nameHu: 'Angol', shortCode: 'EN' },
-      image: { status: 'pending', url: null, languageId: null },
+      image: {
+        status: 'pending',
+        url: null,
+        thumbUrl: null,
+        languageId: null,
+        languageNameHu: null,
+      },
     });
   });
 

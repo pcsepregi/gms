@@ -39,7 +39,7 @@ function card(id: number, p: Partial<Card> = {}): Card {
     finish: { id: 1, name: 'Normal', description: 'Sima nyomat.' },
     language: EN,
     note: '',
-    image: { status: 'exact', url: null, languageId: null },
+    image: { status: 'exact', url: null, thumbUrl: null, languageId: null, languageNameHu: null },
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
     ...p,

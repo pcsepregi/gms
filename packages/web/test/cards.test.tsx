@@ -30,7 +30,7 @@ function card(
     finish: { id: 1, name: finish, description: null },
     language,
     note: '',
-    image: { status: 'pending', url: null, languageId: null },
+    image: { status: 'pending', url: null, thumbUrl: null, languageId: null, languageNameHu: null },
     createdAt: '2026-01-01T00:00:00Z',
     updatedAt: '2026-01-01T00:00:00Z',
     ...p,
@@ -46,7 +46,13 @@ const CARDS: Card[] = [
     lang: 'DE',
     setName: 'Második set',
     cardNumber: '007/SV-P',
-    image: { status: 'fallback', url: '/api/images/4.webp', languageId: 1 },
+    image: {
+      status: 'fallback',
+      url: '/api/images/4.webp',
+      thumbUrl: '/api/images/4-thumb.webp',
+      languageId: 1,
+      languageNameHu: 'Angol',
+    },
   }),
 ];
 

@@ -835,6 +835,25 @@ h3 {
   font-variant-numeric: tabular-nums;
 }
 
+.ph-searching {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.img-badge {
+  position: absolute;
+  left: calc(var(--space) * 4.5);
+  bottom: calc(var(--space) * 4.5);
+  padding: 0 calc(var(--space) * 1.5);
+  border-radius: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
 .card-img-thumb {
   width: 22px;
   padding: 0;
@@ -1377,4 +1396,17 @@ h3 {
   background: var(--warn-bg, #f6e7d8);
   color: var(--text, #1d1b19);
   font-size: 0.9rem;
+}
+
+.image-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--space) * 2);
+  margin: calc(var(--space) * 3) 0;
+  text-align: center;
+}
+
+.image-state p {
+  margin: 0;
 }

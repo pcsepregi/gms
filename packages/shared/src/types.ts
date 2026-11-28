@@ -29,9 +29,25 @@ export interface Card {
   finish: Pick<Finish, 'id' | 'name' | 'description'>;
   language: Pick<Language, 'id' | 'name' | 'nameHu' | 'shortCode' | 'sortOrder'>;
   note: string;
-  image: { status: ImageStatus; url: string | null; languageId: number | null };
+  image: {
+    status: ImageStatus;
+    url: string | null;
+    thumbUrl: string | null;
+    /** Tartalék képnél a kép nyelve (magyar név), különben `null`. */
+    languageId: number | null;
+    languageNameHu: string | null;
+  };
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ImageStatusCounts {
+  total: number;
+  pending: number;
+  exact: number;
+  fallback: number;
+  none: number;
+  error: number;
 }
 
 export interface Lookups {

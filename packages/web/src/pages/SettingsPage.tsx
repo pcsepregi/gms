@@ -1,5 +1,6 @@
+import { Fragment } from 'react';
 import type { ImportSummary } from '@gms/shared';
-import { useHealth, useImportSummary } from '../api/queries';
+import { useHealth, useImageStatus, useImportSummary } from '../api/queries';
 import { useBackupStatus, useRunBackup } from '../api/backup';
 import { useToast } from '../components/Toasts';
 import { downloadExport } from '../lib/download';
@@ -144,6 +145,27 @@ function ExportBlock() {
   );
 }
 
+export function ImageStatusView() {
+  const status = useImageStatus();
+  if (status.isPending) return <p className="muted">{hu.common.loading}</p>;
+  if (status.isError || !status.data) return <p role="alert">{hu.common.loadError}</p>;
+  const d = status.data;
+  const keys = ['exact', 'fallback', 'none', 'pending', 'error'] as const;
+  return (
+    <div className="stack" data-testid="image-status">
+      <p className="muted">{t.imagesIntro}</p>
+      <dl className="facts">
+        {keys.map((k) => (
+          <Fragment key={k}>
+            <dt>{t.imageCounts[k]}</dt>
+            <dd data-testid={`image-count-${k}`}>{d[k]}</dd>
+          </Fragment>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
 export function SettingsPage() {
   const summary = useImportSummary();
   const health = useHealth();
@@ -160,6 +182,8 @@ export function SettingsPage() {
       {summary.isError && <p role="alert">{hu.common.loadError}</p>}
       {summary.data === null && <p>{t.notImported}</p>}
       {summary.data && <ImportSummaryView summary={summary.data} />}
+      <h2>{t.imagesHeading}</h2>
+      <ImageStatusView />
       <h2>{t.finishesHeading}</h2>
       <FinishDictionary />
       {health.data && (

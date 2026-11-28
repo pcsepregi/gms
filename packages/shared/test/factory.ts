@@ -40,7 +40,13 @@ export function makeCard(spec: CardSpec = {}): Card {
     finish: { id: 1, name: finish, description: null },
     language,
     note: spec.note ?? '',
-    image: { status: spec.imageStatus ?? 'pending', url: null, languageId: null },
+    image: {
+      status: spec.imageStatus ?? 'pending',
+      url: null,
+      thumbUrl: null,
+      languageId: null,
+      languageNameHu: null,
+    },
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: spec.updatedAt ?? `2026-01-01T00:00:${String(id % 60).padStart(2, '0')}.000Z`,
   };

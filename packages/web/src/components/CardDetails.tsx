@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Card } from '@gms/shared';
-import { useDeleteCard } from '../api/queries';
+import { useDeleteCard, useRefreshImage } from '../api/queries';
 import { cardName } from '../hooks/useOwnedToggle';
 import { hu } from '../i18n/hu';
 import { CardForm } from './CardForm';
@@ -45,6 +45,7 @@ export function CardDetails({ card, loading, onClose, onToggle }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [shownId, setShownId] = useState(card?.id);
   const remove = useDeleteCard();
+  const refreshImage = useRefreshImage();
   const toast = useToast();
 
   // Másik kártyára váltáskor a nézet alaphelyzetbe áll.
@@ -117,6 +118,23 @@ export function CardDetails({ card, loading, onClose, onToggle }: Props) {
         <div className="panel-body" data-owned={String(card.owned)}>
           <div className="panel-media">
             <CardImage card={card} size="large" />
+          </div>
+          <div className="image-state">
+            <p className="muted" data-testid="image-result">
+              {card.image.status === 'fallback'
+                ? t.imageResult.fallback(card.image.languageNameHu ?? '?')
+                : typeof t.imageResult[card.image.status] === 'string'
+                  ? (t.imageResult[card.image.status] as string)
+                  : ''}
+            </p>
+            <button
+              type="button"
+              className="btn"
+              disabled={card.image.status === 'pending' || refreshImage.isPending}
+              onClick={() => refreshImage.mutate(card.id)}
+            >
+              {card.image.status === 'pending' ? t.imageRefreshing : t.imageRefresh}
+            </button>
           </div>
           <label className="switch">
             <input
