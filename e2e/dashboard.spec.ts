@@ -66,3 +66,16 @@ for (const scheme of ['light', 'dark'] as const) {
     expect(bad).toEqual([]);
   });
 }
+
+test('böngésző-ikon és fülcím', async ({ page, request }) => {
+  await page.goto('/');
+  await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveAttribute(
+    'href',
+    '/favicon.svg',
+  );
+  for (const file of ['/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png']) {
+    const res = await request.get(file);
+    expect(res.status(), file).toBe(200);
+  }
+  await expect(page).not.toHaveTitle('GMS');
+});
