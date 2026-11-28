@@ -72,24 +72,56 @@ describe('Beállítások oldal (S-02/EF3)', () => {
   });
 });
 
-describe('Áttekintés oldal', () => {
-  it('megvan / összes kártya', async () => {
-    mockApi({
-      '/api/health': { body: health },
-      '/api/cards': {
-        body: [
-          { owned: true, image: { status: 'exact' } },
-          { owned: false, image: { status: 'none' } },
-          { owned: true, image: { status: 'exact' } },
-        ],
-      },
-    });
+const grp = (key: string, owned: number, all: number, label = key) => ({ key, label, owned, all });
+
+const stats = {
+  total: { owned: 2, all: 3 },
+  byLanguage: [grp('DE', 1, 2, 'Német'), grp('EN', 1, 1, 'Angol')],
+  byPokemon: [grp('Pokemon A', 2, 3)],
+  bySet: Array.from({ length: 12 }, (_, i) => grp(`Set ${i}`, 0, 1)),
+  byFinish: [grp('Holo', 1, 2)],
+  closest: [{ ...grp('DE', 1, 2, 'Német'), kind: 'language', missing: 1 }],
+  recent: [],
+};
+
+describe('Áttekintés oldal (S-30…S-33)', () => {
+  it('megvan / összes, százalék és a bontások', async () => {
+    mockApi({ '/api/health': { body: health }, '/api/stats': { body: stats } });
     renderWithProviders(<App />, '/');
-    expect(await screen.findByText('2 / 3 kártya megvan')).toBeInTheDocument();
+    expect(await screen.findByTestId('hero-owned')).toHaveTextContent('2');
+    expect(screen.getByText('2 / 3 kártya megvan')).toBeInTheDocument();
+    expect(screen.getByTestId('hero-percent')).toHaveTextContent('67%');
+    expect(screen.getByText('Német – még 1 lap')).toBeInTheDocument();
+    expect(screen.getByText('Még nem jelöltél meg új lapot az appban.')).toBeInTheDocument();
+  });
+
+  it('a sávok a csoport hiányzó lapjaira szűrt listára vezetnek (T-DSH-06)', async () => {
+    mockApi({ '/api/health': { body: health }, '/api/stats': { body: stats } });
+    renderWithProviders(<App />, '/');
+    const link = await screen.findByRole('link', { name: /^Német\s?1/u });
+    expect(link).toHaveAttribute('href', '/kartyak?nyelv=DE&allapot=hianyzik');
+    expect(screen.getByRole('link', { name: /^Pokemon A/u })).toHaveAttribute(
+      'href',
+      '/kartyak?pokemon=Pokemon+A&allapot=hianyzik',
+    );
+  });
+
+  it('a setek alapból összecsukva, kinyithatók', async () => {
+    mockApi({ '/api/health': { body: health }, '/api/stats': { body: stats } });
+    renderWithProviders(<App />, '/');
+    await screen.findByTestId('hero');
+    expect(screen.queryByRole('link', { name: /^Set 11/u })).not.toBeInTheDocument();
+    screen.getByRole('button', { name: 'Mind a 12 set megjelenítése' }).click();
+    expect(await screen.findByRole('link', { name: /^Set 11/u })).toBeInTheDocument();
   });
 
   it('üres adatbázis', async () => {
-    mockApi({ '/api/health': { body: health }, '/api/cards': { body: [] } });
+    mockApi({
+      '/api/health': { body: health },
+      '/api/stats': {
+        body: { ...stats, total: { owned: 0, all: 0 }, byLanguage: [], closest: [] },
+      },
+    });
     renderWithProviders(<App />, '/');
     expect(await screen.findByText(/Még nincs kártya/u)).toBeInTheDocument();
   });

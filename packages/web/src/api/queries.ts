@@ -10,6 +10,7 @@ import type {
   Language,
   LanguageInput,
   Lookups,
+  Stats,
 } from '@gms/shared';
 import { ApiError, deleteJson, getJson, sendJson } from './client';
 
@@ -52,6 +53,15 @@ export function useRefreshImage() {
     },
   });
 }
+
+/** Dashboard statisztikák; minden megnyitáskor frissül (S-31/EF3). */
+export const useStats = () =>
+  useQuery({
+    queryKey: ['stats'],
+    queryFn: () => getJson<Stats>('/api/stats'),
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
 
 export const useHealth = () =>
   useQuery({ queryKey: ['health'], queryFn: () => getJson<Health>('/api/health') });
