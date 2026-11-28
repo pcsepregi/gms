@@ -34,13 +34,26 @@ export class ImageResolver {
     return (await imageSize(bytes)) ? bytes : null;
   }
 
-  private async fromProviders(card: ImageQuery, lang: string): Promise<Resolution | null> {
+  /**
+   * A források sorban; egy forrás hibája (pl. 503) nem akadályozza a többit, csak jelezzük.
+   * Hálózati hiba esetén nincs értelme tovább próbálkozni.
+   */
+  private async fromProviders(
+    card: ImageQuery,
+    lang: string,
+    onError: (err: Error) => void,
+  ): Promise<Resolution | null> {
     for (const p of this.o.providers) {
-      const hit = await p.findImage(card, lang);
-      if (!hit) continue;
-      const bytes = await this.download(hit);
-      if (bytes) {
-        return { kind: 'found', exact: false, languageCode: lang, bytes, source: hit.source };
+      try {
+        const hit = await p.findImage(card, lang);
+        if (!hit) continue;
+        const bytes = await this.download(hit);
+        if (bytes) {
+          return { kind: 'found', exact: false, languageCode: lang, bytes, source: hit.source };
+        }
+      } catch (err) {
+        if (err instanceof NetworkError) throw err;
+        onError(err as Error);
       }
     }
     return null;
@@ -48,13 +61,16 @@ export class ImageResolver {
 
   async resolve(card: ImageQuery): Promise<Resolution> {
     let sourceErrors = 0;
+    const onError = (err: Error) => {
+      sourceErrors++;
+      this.o.log?.('képforrás hiba', { cardId: card.id, error: err.message });
+    };
     const attempt = async <T>(fn: () => Promise<T | null>): Promise<T | null> => {
       try {
         return await fn();
       } catch (err) {
         if (err instanceof NetworkError) throw err;
-        sourceErrors++;
-        this.o.log?.('képforrás hiba', { cardId: card.id, error: (err as Error).message });
+        onError(err as Error);
         return null;
       }
     };
@@ -62,7 +78,7 @@ export class ImageResolver {
     try {
       const own = card.languageCode;
       if (own) {
-        const r = await attempt(() => this.fromProviders(card, own));
+        const r = await attempt(() => this.fromProviders(card, own, onError));
         if (r?.kind === 'found') return { ...r, exact: true };
       }
 
@@ -85,7 +101,7 @@ export class ImageResolver {
       const order = [...(this.o.fallbackOrder ?? ['en', 'ja']), ...this.o.allLanguageCodes()];
       for (const lang of new Set(order)) {
         if (lang === own) continue;
-        const r = await attempt(() => this.fromProviders(card, lang));
+        const r = await attempt(() => this.fromProviders(card, lang, onError));
         if (r?.kind === 'found') return { ...r, exact: false };
       }
     } catch (err) {
