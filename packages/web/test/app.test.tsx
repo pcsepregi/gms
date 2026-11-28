@@ -76,7 +76,10 @@ const grp = (key: string, owned: number, all: number, label = key) => ({ key, la
 
 const stats = {
   total: { owned: 2, all: 3 },
-  byLanguage: [grp('DE', 1, 2, 'Német'), grp('EN', 1, 1, 'Angol')],
+  byLanguage: [
+    { ...grp('DE', 1, 2, 'Német'), ownedByPokemon: { 'Pokemon A': 1 } },
+    { ...grp('EN', 1, 1, 'Angol'), ownedByPokemon: { 'Pokemon A': 1 } },
+  ],
   byPokemon: [grp('Pokemon A', 2, 3)],
   bySet: Array.from({ length: 12 }, (_, i) => grp(`Set ${i}`, 0, 1)),
   byFinish: [grp('Holo', 1, 2)],
