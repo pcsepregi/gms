@@ -285,6 +285,21 @@ describe('ImageResolver', () => {
     expect(r).toMatchObject({ kind: 'found', exact: false, languageCode: 'en' });
   });
 
+  it('egy forrás hibája nem akadályozza a következő forrást ugyanazon a nyelven', async () => {
+    const logs: string[] = [];
+    const r = await new ImageResolver({
+      http: fakeHttp({ 'https://img/ok': await png(630, 880) }),
+      providers: [
+        new FakeProvider({ de: new SourceError('503', 503) }),
+        new FakeProvider({ de: OK }),
+      ],
+      allLanguageCodes: () => [],
+      log: (msg) => logs.push(msg),
+    }).resolve({ ...query, note: '' });
+    expect(r).toMatchObject({ kind: 'found', exact: true, languageCode: 'de' });
+    expect(logs).toEqual(['képforrás hiba']);
+  });
+
   it('nyelv nélküli kártyánál csak tartalék keresés van', async () => {
     const p = new FakeProvider({ ja: OK });
     const r = await resolver(fakeHttp({ 'https://img/ok': await png(630, 880) }), [p]).resolve({

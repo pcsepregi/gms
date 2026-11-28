@@ -93,12 +93,17 @@ export class AsiaProvider implements ImageProvider {
     if (!region) return null;
     const wanted = localNumber(card.cardNumber);
     const code = card.setCode ? norm(card.setCode) : null;
+    const matches: AsiaCard[] = [];
     for (const id of await this.search(region, this.keyword(card.pokemon, languageCode))) {
       const c = await this.detail(region, id);
-      if (!c || localNumber(c.number) !== wanted) continue;
-      if (code && norm(c.setCode) !== code) continue;
-      return { url: c.image, source: `${BASE}/${region}/card-search/detail/${id}/` };
+      if (c && localNumber(c.number) === wanted) matches.push(c);
     }
-    return null;
+    // Elsőként a set jele dönt; ha az eltér (pl. kezdőpakliknál), a teljes szám ("131/163").
+    const best =
+      matches.find((c) => !code || norm(c.setCode) === code) ??
+      matches.find((c) => c.number.includes('/') && norm(c.number) === norm(card.cardNumber));
+    return best
+      ? { url: best.image, source: `${BASE}/${region}/card-search/detail/${best.id}/` }
+      : null;
   }
 }

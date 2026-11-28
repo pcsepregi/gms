@@ -83,6 +83,13 @@ describe('AsiaProvider', () => {
     });
     expect(calls.length).toBe(n); // minden a gyorsítótárból jött
     expect(await p.findImage(card({ cardNumber: '9/190' }), 'th')).toBeNull();
+    // eltérő set jel, de a teljes szám egyezik → elfogadja; csak a szám első fele → nem
+    expect(await p.findImage(card({ setCode: 'SV1S', cardNumber: '151/190' }), 'th')).toMatchObject(
+      {
+        url: `${B}/b.png`,
+      },
+    );
+    expect(await p.findImage(card({ setCode: 'SVX', cardNumber: '151' }), 'th')).toBeNull();
   });
 
   it('helyi név nélkül a kártya nevével keres; nem támogatott nyelvre nem kérdez', async () => {
