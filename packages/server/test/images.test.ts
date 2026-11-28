@@ -400,6 +400,54 @@ describe('TcgdexProvider', () => {
     expect(lists()).toBe(2);
   });
 
+  it('közvetlen keresés setkód + szám alapján (kis-/nagybetű mindegy), a sorszám-lista nélkül', async () => {
+    const calls: string[] = [];
+    const ex: ImageQuery = {
+      ...q,
+      pokemon: 'Oinkologne',
+      setName: 'Scarlet ex',
+      setCode: 'SV1S',
+      cardNumber: '068/078',
+      languageCode: 'ja',
+    };
+    const r = routes({
+      [`${API}/ja/sets`]: [{ id: 'SV1S' }, { id: 'SV4a' }],
+      [`${API}/ja/cards/SV1S-068`]: {
+        id: 'SV1S-068',
+        localId: '068',
+        name: 'x',
+        image: 'https://a/ja/SV1S/068',
+      },
+      [`${API}/ja/cards/SV4a-150`]: {
+        id: 'SV4a-150',
+        localId: '150',
+        name: 'y',
+        image: 'https://a/ja/SV4a/150',
+      },
+    });
+    const p = new TcgdexProvider(createFake(r, calls));
+    expect(await p.findImage(ex, 'ja')).toEqual({
+      url: 'https://a/ja/SV1S/068/high.webp',
+      source: `${API}/ja/cards/SV1S-068`,
+    });
+    expect(calls.some((c) => c.includes('dexId'))).toBe(false);
+    const hit = await p.findImage({ ...ex, setCode: 'SV4A', cardNumber: '150/190' }, 'ja');
+    expect(hit?.url).toBe('https://a/ja/SV4a/150/high.webp');
+  });
+
+  it('közvetlen keresés: kép nélküli lap → null (jöhet a tartalék nyelv); nincs ilyen lap → sorszám szerinti keresés', async () => {
+    const th: ImageQuery = { ...q, setCode: 'SV3', cardNumber: '098/108', languageCode: 'th' };
+    const r = routes({
+      [`${API}/th/sets`]: [{ id: 'SV3' }],
+      [`${API}/th/cards/SV3-098`]: { id: 'SV3-098', localId: '098', name: 'z' },
+      [`${API}/de/sets`]: [{ id: 'SV3' }],
+    });
+    const p = new TcgdexProvider(createFake(r));
+    expect(await p.findImage(th, 'th')).toBeNull();
+    // a de nyelvben van SV3 set, de nincs ilyen lap: a régi út (sorszám + set) dönt
+    expect((await p.findImage({ ...q, setCode: 'SV3' }, 'de'))?.url).toContain('/sv01/154');
+  });
+
   it('localNumber', () => {
     expect(localNumber('007/SV-P')).toBe('7');
     expect(localNumber('TG05/TG30')).toBe('TG05');

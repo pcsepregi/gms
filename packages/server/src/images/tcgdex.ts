@@ -43,6 +43,7 @@ export class TcgdexProvider implements ImageProvider {
   private readonly lists = new Map<string, { at: number; cards: CardBrief[] }>();
   private readonly sets = new Map<string, SetInfo | null>();
   private readonly dex = new Map<string, number | null>();
+  private readonly setLists = new Map<string, { at: number; ids: string[] }>();
 
   constructor(
     private readonly http: Http,
@@ -99,7 +100,54 @@ export class TcgdexProvider implements ImageProvider {
     return total !== null && info.cardCount?.official === total;
   }
 
+  /** A nyelv setjeinek azonosítói (gyorsítótárazva). */
+  private async setIds(lang: string): Promise<string[]> {
+    const hit = this.setLists.get(lang);
+    if (hit && this.now() - hit.at < CACHE_MS) return hit.ids;
+    const list = (await this.http.json<{ id: string }[]>(`${API}/${lang}/sets`)) ?? [];
+    const ids = list.map((x) => x.id);
+    this.setLists.set(lang, { at: this.now(), ids });
+    return ids;
+  }
+
+  /**
+   * Közvetlen keresés a setkód és a kártyaszám alapján (`{set}-{szám}`), ha a forrásban
+   * van ilyen azonosítójú set (kis-/nagybetűtől függetlenül, vagy a SET_MAP szerint).
+   * Így azok a lapok is megvannak, amelyeknél a forrásból hiányzik a Pokémon sorszáma
+   * (pl. több ex lap). `undefined`: nincs ilyen lap, mehet a sorszám szerinti keresés.
+   */
+  private async direct(card: ImageQuery, lang: string): Promise<ImageHit | null | undefined> {
+    const code = card.setCode?.trim();
+    if (!code) return undefined;
+    const ids = await this.setIds(lang);
+    const wanted = new Set([...mappedSetIds(code)].map((x) => x.toLowerCase()));
+    const sets = ids.filter(
+      (id) => id.toLowerCase() === code.toLowerCase() || wanted.has(id.toLowerCase()),
+    );
+    const head = (card.cardNumber.split('/')[0] ?? '').trim();
+    if (!sets.length || !head) return undefined;
+    const locals = new Set([head]);
+    if (/^\d+$/u.test(head)) {
+      locals.add(String(Number(head)));
+      locals.add(String(Number(head)).padStart(3, '0'));
+    }
+    for (const setId of sets) {
+      for (const local of locals) {
+        const id = `${setId}-${local}`;
+        const c = await this.http.json<CardBrief>(`${API}/${lang}/cards/${encodeURIComponent(id)}`);
+        if (!c) continue;
+        // A lap megvan; ha nincs képe, ebben a nyelvben nincs mit tenni (null).
+        return c.image
+          ? { url: `${c.image}/high.webp`, source: `${API}/${lang}/cards/${id}` }
+          : null;
+      }
+    }
+    return undefined;
+  }
+
   async findImage(card: ImageQuery, languageCode: string): Promise<ImageHit | null> {
+    const direct = await this.direct(card, languageCode);
+    if (direct !== undefined) return direct;
     const dex = await this.dexId(card.pokemon);
     if (dex === null) return null;
     const wanted = localNumber(card.cardNumber);
